@@ -12,11 +12,28 @@ import {
 import { generateChapters } from '@/lib/chaptering';
 import { assembleMarkdown, slugify } from '@/lib/markdown';
 import { writeConclusion, writeIntroduction, writeSection } from '@/lib/writer';
+import { getAppServerSession } from '@/lib/auth-helpers';
+import { prisma } from '@/lib/db';
+import { assertDailyLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
     const startedAt = Date.now();
     console.log('[generate-blog] start');
+
+    const session = await getAppServerSession();
+    const userId = session?.user?.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { remaining: remainingGenerations, limit } = assertDailyLimit({
+      userId,
+    });
+    console.log('[generate-blog] daily limit ok', {
+      remainingGenerations,
+      limit,
+    });
 
     const body = await request.json();
     const youtubeUrl = (body?.youtubeUrl || '').toString();
@@ -161,6 +178,47 @@ export async function POST(request: NextRequest) {
     });
 
     const filename = `${slugify(articleTitle)}.md`;
+
+    console.log('[generate-blog] persisting article');
+    await prisma.article.create({
+      data: {
+        userId,
+        videoUrl: youtubeUrl,
+        videoId,
+        title: articleTitle,
+        slug: slugify(articleTitle),
+        markdown: md,
+        status: 'complete',
+        metaJson: {
+          chapters: chapters.map((c) => ({
+            id: c.id,
+            title: c.title,
+            startSec: c.startSec,
+            endSec: c.endSec,
+            primaryKeyword: c.primaryKeyword,
+          })),
+          models: {
+            chapters:
+              process.env.OPENROUTER_MODEL_CHAPTERS || 'google/gemini-2.0-flash',
+            writer:
+              process.env.OPENROUTER_MODEL_WRITER || 'google/gemini-2.5-flash',
+          },
+          wordBudget: {
+            overallTargetWords,
+            introTargetWords,
+            perSectionTargetWords,
+            conclusionTargetWords,
+          },
+          transcript: {
+            lang,
+            segments: segments.length,
+            chunks: chunks.length,
+            totalDurationSec,
+          },
+        },
+      },
+    });
+
     console.log('[generate-blog] done', {
       filename,
       bytes: Buffer.byteLength(md, 'utf8'),

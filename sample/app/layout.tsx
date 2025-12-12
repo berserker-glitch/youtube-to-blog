@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
+import { Providers } from "./providers";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -16,10 +17,18 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "YouTube Summary Generator",
-  description: "Transform any YouTube video into comprehensive AI-powered summaries with detailed insights and key points.",
-  keywords: ["YouTube", "Summary", "AI", "Transcription", "Video Analysis"],
-  authors: [{ name: "YouTube Summary Generator" }],
+  title: "ArticleAlchemist",
+  description:
+    "ArticleAlchemist turns captioned YouTube videos into structured, SEO-optimized long-form Markdown articles.",
+  keywords: [
+    "YouTube",
+    "Blog generator",
+    "Markdown",
+    "SEO",
+    "Transcription",
+    "AI writing",
+  ],
+  authors: [{ name: "ArticleAlchemist" }],
 };
 
 export const viewport = {
@@ -39,7 +48,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="font-sans antialiased" suppressHydrationWarning>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

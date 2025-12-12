@@ -8,6 +8,34 @@ This is a Next.js project demonstrating the use of the `youtube-caption-extracto
 - Retrieve video details including title and description
 - Support for multiple languages
 
+## ArticleAlchemist (SaaS mode)
+
+This `sample/` app has been upgraded into **ArticleAlchemist**:
+
+- Email login (NextAuth Email provider) with Gmail SMTP
+- MySQL persistence via Prisma (articles + auth tables)
+- Authenticated dashboard under `/app/*` with article history
+
+### Local setup
+
+1. Create `sample/.env.local` (copy from `sample/.env.example`)
+2. Set `DATABASE_URL` to your MySQL database
+3. Create a `NEXTAUTH_SECRET` and set `NEXTAUTH_URL`
+4. Configure Gmail SMTP using a Google “App Password”\n
+### Prisma\n
+Generate client:\n
+```bash\n
+npx prisma generate\n
+```\n
+Apply migrations (requires DB):\n
+```bash\n
+npx prisma migrate dev\n
+```\n
+### Run\n
+```bash\n
+npm run dev\n
+```\n
+
 ## Getting Started
 
 First, install the dependencies:
