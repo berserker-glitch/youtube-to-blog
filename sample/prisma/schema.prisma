@@ -12,6 +12,7 @@ model User {
   name          String?
   email         String?   @unique
   emailVerified DateTime?
+  passwordHash  String?   @db.VarChar(255)
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -19,6 +20,7 @@ model User {
   accounts Account[]
   sessions Session[]
   articles Article[]
+  wordpressIntegrations WordpressIntegration[]
 }
 
 model Account {
@@ -57,6 +59,16 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model SignupToken {
+  id        String   @id @default(cuid())
+  email     String
+  tokenHash String   @unique @db.VarChar(64)
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email, expires])
+}
+
 enum ArticleStatus {
   draft
   complete
@@ -82,8 +94,42 @@ model Article {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Optional WordPress publishing linkage (Option A now, plugin later).
+  wordpressIntegrationId String?
+  wordpressPostId        Int?
+  wordpressPostUrl       String? @db.VarChar(2048)
+
+  wordpressIntegration WordpressIntegration? @relation(fields: [wordpressIntegrationId], references: [id], onDelete: SetNull)
+
   @@index([userId, createdAt])
   @@index([videoId])
+  @@index([wordpressIntegrationId])
+}
+
+model WordpressIntegration {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Site identity
+  // Keep this index-safe for MySQL utf8mb4 (used in @@unique below).
+  // This is the *base* site URL, so 512 is more than enough.
+  siteUrl  String @db.VarChar(512)
+
+  // Option A (Application Passwords)
+  username       String @db.VarChar(255)
+  appPasswordEnc String @db.LongText
+
+  // Optional: result of last verification
+  lastVerifiedAt DateTime?
+  wpUserId       Int?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articles Article[]
+
+  @@unique([userId, siteUrl])
+  @@index([userId, updatedAt])
 }
 
 

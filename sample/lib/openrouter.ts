@@ -61,7 +61,13 @@ export async function callOpenRouterChat(
 
   if (!resp.ok) {
     const text = await resp.text().catch(() => '');
-    throw new Error(`OpenRouter API Error: ${resp.status} ${text}`.trim());
+    const base = `OpenRouter API Error: ${resp.status} ${text}`.trim();
+    if (resp.status === 401) {
+      throw new Error(
+        `${base}\n\nAuth hint: this usually means your OPENROUTER_API_KEY is invalid OR your Next dev server is running with an old/overridden env var. Verify the key in \`sample/.env\` and fully restart \`npm run dev\`.`
+      );
+    }
+    throw new Error(base);
   }
 
   const data = (await resp.json()) as OpenRouterChatResponse;

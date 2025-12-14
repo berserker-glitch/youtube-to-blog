@@ -30,12 +30,12 @@ export default async function ArticleDetailPage({
 
   return (
     <div>
-      <div className='flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-8'>
+      <div className='flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6 sm:mb-8'>
         <div>
           <p className='text-sm text-zinc-500 dark:text-zinc-400'>
             {new Date(article.createdAt).toLocaleString()}
           </p>
-          <h1 className='mt-1 text-3xl md:text-4xl font-light text-zinc-900 dark:text-zinc-50 tracking-tight'>
+          <h1 className='mt-1 text-2xl sm:text-3xl md:text-4xl font-light text-zinc-900 dark:text-zinc-50 tracking-tight'>
             {article.title}
           </h1>
           <p className='mt-3 text-sm text-zinc-600 dark:text-zinc-300 break-all'>
@@ -45,11 +45,11 @@ export default async function ArticleDetailPage({
         <ArticleClientActions markdown={article.markdown} filename={filename} />
       </div>
 
-      <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-5'>
+      <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-4 sm:p-5'>
         <textarea
           readOnly
           value={article.markdown}
-          className='w-full h-[640px] resize-none rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950/40 text-zinc-900 dark:text-zinc-100 p-4 font-mono text-sm leading-relaxed'
+          className='w-full h-[400px] sm:h-[500px] lg:h-[640px] resize-none rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950/40 text-zinc-900 dark:text-zinc-100 p-4 font-mono text-sm leading-relaxed'
         />
       </div>
     </div>

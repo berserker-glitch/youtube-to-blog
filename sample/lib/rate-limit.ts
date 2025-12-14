@@ -17,9 +17,9 @@ export function assertDailyLimit(params: {
   userId: string;
   limit?: number;
 }): { remaining: number; limit: number } {
-  const limit =
-    params.limit ??
-    Number.parseInt(process.env.DAILY_GENERATION_LIMIT || '10', 10);
+  // Production guardrail: hard-cap at 2/day unless you explicitly pass a smaller limit.
+  // (User requirement: block users to only 2 articles per day.)
+  const limit = Math.min(params.limit ?? 2, 2);
 
   const dayKey = todayKey();
   const existing = buckets.get(params.userId);

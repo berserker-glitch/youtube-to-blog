@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
 
     const { remaining: remainingGenerations, limit } = assertDailyLimit({
       userId,
+      limit: 2,
     });
     console.log('[generate-blog] daily limit ok', {
       remainingGenerations,

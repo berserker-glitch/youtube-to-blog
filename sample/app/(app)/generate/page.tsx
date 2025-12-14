@@ -136,18 +136,18 @@ export default function GeneratePage() {
 
   return (
     <div>
-      <div className='mb-8'>
-        <h1 className='text-3xl md:text-4xl font-light text-zinc-900 dark:text-zinc-50 tracking-tight'>
+      <div className='mb-6 sm:mb-8'>
+        <h1 className='text-2xl sm:text-3xl md:text-4xl font-light text-zinc-900 dark:text-zinc-50 tracking-tight'>
           Generate an article
         </h1>
-        <p className='mt-2 text-zinc-600 dark:text-zinc-300 max-w-2xl'>
+        <p className='mt-2 text-zinc-600 dark:text-zinc-300 max-w-2xl text-sm sm:text-base'>
           Paste a YouTube URL and ArticleAlchemist will generate a single Markdown
           article from the transcript.
         </p>
       </div>
 
-      <div className='grid grid-cols-1 xl:grid-cols-2 gap-6'>
-        <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-5'>
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+        <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-4 sm:p-5'>
           <label className='block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2'>
             YouTube URL
           </label>
@@ -157,7 +157,7 @@ export default function GeneratePage() {
             onChange={(e) => setVideoUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
             placeholder='https://www.youtube.com/watch?v=...'
-            className='w-full px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950/40 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20 transition-all'
+            className='w-full px-4 py-4 sm:py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950/40 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20 transition-all text-base min-h-[44px]'
           />
           {!isValidUrl && (
             <p className='mt-2 text-sm text-red-700 dark:text-red-300'>
@@ -222,11 +222,11 @@ export default function GeneratePage() {
             </div>
           )}
 
-          <div className='mt-4 flex gap-3'>
+          <div className='mt-4 flex flex-col sm:flex-row gap-3'>
             <button
               onClick={handleGenerate}
               disabled={!canGenerate}
-              className='flex-1 bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-400 text-white font-medium py-3 px-6 rounded-xl transition-colors disabled:cursor-not-allowed'
+              className='flex-1 bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-400 text-white font-medium py-4 px-6 rounded-xl transition-colors disabled:cursor-not-allowed min-h-[44px] text-base'
             >
               {isGenerating ? 'Generating…' : 'Generate (.md)'}
             </button>
@@ -238,7 +238,7 @@ export default function GeneratePage() {
                 setPhase('idle');
               }}
               disabled={!isGenerating}
-              className='px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 disabled:opacity-50 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors'
+              className='w-full sm:w-auto px-6 py-4 sm:px-4 sm:py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 disabled:opacity-50 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors min-h-[44px] text-base'
             >
               Cancel
             </button>
@@ -248,7 +248,7 @@ export default function GeneratePage() {
             <div className='mt-4 grid grid-cols-1 gap-3'>
               <button
                 onClick={() => triggerDownload(markdown, filename)}
-                className='w-full bg-white dark:bg-zinc-950/40 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium py-3 px-6 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors'
+                className='w-full bg-white dark:bg-zinc-950/40 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium py-4 px-6 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors min-h-[44px] text-base'
               >
                 Download {filename}
               </button>
@@ -256,9 +256,9 @@ export default function GeneratePage() {
           )}
         </div>
 
-        <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-5'>
+        <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-4 sm:p-5'>
           <div className='flex items-center justify-between mb-3'>
-            <h2 className='text-lg font-medium text-zinc-800 dark:text-zinc-100'>
+            <h2 className='text-base sm:text-lg font-medium text-zinc-800 dark:text-zinc-100'>
               Preview
             </h2>
             <button
@@ -269,7 +269,7 @@ export default function GeneratePage() {
                 window.setTimeout(() => setCopied(false), 1200);
               }}
               disabled={!markdown}
-              className='text-sm text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 disabled:opacity-50'
+              className='text-sm px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 min-h-[36px]'
             >
               {copied ? 'Copied' : 'Copy'}
             </button>
@@ -278,7 +278,7 @@ export default function GeneratePage() {
             value={markdown}
             readOnly
             placeholder='Generated Markdown will appear here…'
-            className='w-full h-[560px] resize-none rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950/40 text-zinc-900 dark:text-zinc-100 p-4 font-mono text-sm leading-relaxed'
+            className='w-full h-[400px] sm:h-[500px] lg:h-[560px] resize-none rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950/40 text-zinc-900 dark:text-zinc-100 p-4 font-mono text-sm leading-relaxed'
           />
         </div>
       </div>

@@ -1,31 +1,53 @@
 import type { NextAuthOptions } from 'next-auth';
 import NextAuth from 'next-auth';
-import EmailProvider from 'next-auth/providers/email';
+import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { prisma } from '@/lib/db';
+import bcrypt from 'bcryptjs';
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    EmailProvider({
-      server: {
-        host: process.env.EMAIL_SERVER_HOST,
-        port: Number(process.env.EMAIL_SERVER_PORT || 465),
-        auth: {
-          user: process.env.EMAIL_SERVER_USER,
-          pass: process.env.EMAIL_SERVER_PASSWORD,
-        },
+    CredentialsProvider({
+      name: 'Credentials',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
-      from: process.env.EMAIL_FROM,
+      async authorize(credentials) {
+        const email = (credentials?.email || '').toString().trim().toLowerCase();
+        const password = (credentials?.password || '').toString();
+        if (!email || !password) return null;
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user?.passwordHash) return null;
+        if (!user.emailVerified) return null;
+
+        const ok = await bcrypt.compare(password, user.passwordHash);
+        if (!ok) return null;
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+        };
+      },
     }),
   ],
   session: {
-    strategy: 'database',
+    // Required for Credentials provider in NextAuth v4
+    strategy: 'jwt',
   },
   callbacks: {
-    async session({ session, user }) {
+    async jwt({ token, user }) {
+      // Persist user id into the token on sign-in
+      if (user?.id) token.sub = user.id;
+      return token;
+    },
+    async session({ session, token }) {
       if (session.user) {
-        session.user.id = user.id;
+        session.user.id = token.sub;
       }
       return session;
     },

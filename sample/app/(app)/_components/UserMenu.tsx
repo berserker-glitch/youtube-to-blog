@@ -7,15 +7,16 @@ export function UserMenu() {
   const email = data?.user?.email || 'Signed in';
 
   return (
-    <div className='flex items-center gap-3'>
-      <p className='text-sm text-zinc-600 dark:text-zinc-300 max-w-[240px] truncate'>
+    <div className='flex items-center gap-3 shrink-0'>
+      <p className='hidden lg:block text-sm text-zinc-600 dark:text-zinc-300 max-w-[200px] truncate'>
         {email}
       </p>
       <button
         onClick={() => signOut({ callbackUrl: '/' })}
-        className='text-sm px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors'
+        className='text-sm px-4 py-3 sm:px-3 sm:py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors min-h-[44px] text-base sm:text-sm sm:min-h-[auto]'
       >
-        Sign out
+        <span className='sm:hidden'>Exit</span>
+        <span className='hidden sm:inline'>Sign out</span>
       </button>
     </div>
   );

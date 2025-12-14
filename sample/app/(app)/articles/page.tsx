@@ -37,54 +37,53 @@ export default async function ArticlesPage() {
 
   return (
     <div>
-      <div className='flex items-start justify-between gap-4 mb-8'>
+      <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6 sm:mb-8'>
         <div>
-          <h1 className='text-3xl md:text-4xl font-light text-zinc-900 dark:text-zinc-50 tracking-tight'>
+          <h1 className='text-2xl sm:text-3xl md:text-4xl font-light text-zinc-900 dark:text-zinc-50 tracking-tight'>
             Articles
           </h1>
-          <p className='mt-2 text-zinc-600 dark:text-zinc-300 max-w-2xl'>
+          <p className='mt-2 text-zinc-600 dark:text-zinc-300 max-w-2xl text-sm sm:text-base'>
             Your generated articles are stored in your workspace.
           </p>
         </div>
         <Link
           href='/app/generate'
-          className='inline-flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-white font-medium px-4 py-2 rounded-xl transition-colors'
+          className='inline-flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-white font-medium px-6 py-4 sm:px-4 sm:py-2 rounded-xl transition-colors min-h-[44px] text-base w-full sm:w-auto'
         >
           New article
         </Link>
       </div>
 
       {articles.length === 0 ? (
-        <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-6'>
+        <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-5 sm:p-6'>
           <p className='text-sm text-zinc-600 dark:text-zinc-300'>
             No articles yet. Generate your first one.
           </p>
         </div>
       ) : (
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+        <div className='grid grid-cols-1 gap-4'>
           {articles.map((a) => (
             <Link
               key={a.id}
               href={`/app/articles/${a.id}`}
-              className='block rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-5 hover:bg-white dark:hover:bg-zinc-950/50 transition-colors'
+              className='block rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-4 sm:p-5 hover:bg-white dark:hover:bg-zinc-950/50 transition-colors'
             >
-              <div className='flex items-start justify-between gap-3'>
-                <div>
+              <div className='flex flex-col sm:flex-row sm:items-start justify-between gap-3'>
+                <div className='flex-1'>
                   <p className='text-sm text-zinc-500 dark:text-zinc-400'>
                     {new Date(a.createdAt).toLocaleString()}
                   </p>
-                  <p className='mt-1 text-lg font-medium text-zinc-900 dark:text-zinc-100'>
+                  <p className='mt-1 text-base sm:text-lg font-medium text-zinc-900 dark:text-zinc-100'>
                     {a.title}
                   </p>
+                  <p className='mt-3 text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2'>
+                    Source: {a.videoUrl}
+                  </p>
                 </div>
-                <span className='text-xs px-2 py-1 rounded-full border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200'>
+                <span className='text-xs px-2 py-1 rounded-full border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 self-start sm:self-center'>
                   {a.status}
                 </span>
               </div>
-
-              <p className='mt-3 text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2'>
-                Source: {a.videoUrl}
-              </p>
             </Link>
           ))}
         </div>
