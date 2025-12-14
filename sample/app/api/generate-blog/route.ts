@@ -102,8 +102,8 @@ export async function POST(request: NextRequest) {
       (videoDetails?.title || '').trim() ||
       `YouTube Article (${videoId})`;
 
-    // Word budget: enforce an overall ~3k word target across intro/sections/conclusion.
-    const overallTargetWords = 3000;
+    // Word budget: enforce an overall ~2k word target across intro/sections/conclusion.
+    const overallTargetWords = 1500;
     const introTargetWords = 360;
     const conclusionTargetWords = 320;
     const remaining = Math.max(
