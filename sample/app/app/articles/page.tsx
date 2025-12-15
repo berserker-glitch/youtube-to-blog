@@ -55,7 +55,7 @@ export default async function ArticlesPage() {
         </div>
       ) : (
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-          {articles.map((a) => (
+          {articles.map((a: any) => (
             <Link
               key={a.id}
               href={`/app/articles/${a.id}`}
