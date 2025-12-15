@@ -35,8 +35,8 @@ export default function GeneratePage() {
   }, [videoUrl]);
 
   const canGenerate = useMemo(
-    () => !!videoUrl.trim() && !isGenerating && !genState.inProgress && isValidUrl,
-    [videoUrl, isGenerating, genState.inProgress, isValidUrl]
+    () => !!videoUrl.trim() && !isGenerating && isValidUrl,
+    [videoUrl, isGenerating, isValidUrl]
   );
 
   // Note: generation continues across navigation (handled by GenerationProvider).
@@ -112,9 +112,17 @@ export default function GeneratePage() {
     setPhase('fetching');
     setIsGenerating(true);
 
+    const t1 = window.setTimeout(() => setPhase('chaptering'), 1200);
+    const t2 = window.setTimeout(() => setPhase('writing'), 3500);
+    const t3 = window.setTimeout(() => setPhase('assembling'), 7000);
+
     // Start generation at the app level so it continues even if user navigates.
     startGeneration({ videoUrl });
-    setIsGenerating(false);
+
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+      setIsGenerating(false);
   };
 
   // Mirror global generation results back into this page UI

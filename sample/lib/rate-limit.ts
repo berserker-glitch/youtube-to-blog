@@ -84,7 +84,7 @@ export async function assertGenerationLimit(params: {
     window,
     resetAt,
   };
-}
+  }
 
 export async function getGenerationUsage(params: {
   userId: string;

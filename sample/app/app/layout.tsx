@@ -16,7 +16,7 @@ export default async function AppLayout({
 
   return (
     <GenerationProvider>
-      <div className='h-[100dvh] overflow-hidden bg-[#fbfbfc] dark:bg-[#06070a] text-zinc-900 dark:text-zinc-50'>
+    <div className='h-[100dvh] overflow-hidden bg-[#fbfbfc] dark:bg-[#06070a] text-zinc-900 dark:text-zinc-50'>
       {/* Background */}
       <div className='pointer-events-none fixed inset-0 overflow-hidden'>
         <div className='absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full bg-gradient-to-br from-indigo-200/50 via-sky-200/30 to-transparent blur-3xl dark:from-indigo-500/15 dark:via-sky-500/10' />
@@ -115,7 +115,7 @@ export default async function AppLayout({
           </div>
         </div>
       </div>
-      </div>
+    </div>
     </GenerationProvider>
   );
 }
