@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { requireSuperAdmin } from '@/lib/admin';
 import { prisma } from '@/lib/db';
 import { ensureDefaultModelRoutingRows, getAllModelRoutings } from '@/lib/model-routing';
+import { getUiConfig } from '@/lib/app-config';
 import { AdminDashboardClient } from './_components/AdminDashboardClient';
 
 export default async function AdminPage() {
@@ -13,7 +14,7 @@ export default async function AdminPage() {
 
   await ensureDefaultModelRoutingRows();
 
-  const [users, routings] = await Promise.all([
+  const [users, routings, ui] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -28,6 +29,7 @@ export default async function AdminPage() {
       take: 500,
     }),
     getAllModelRoutings(),
+    getUiConfig(),
   ]);
 
   return (
@@ -41,7 +43,7 @@ export default async function AdminPage() {
         </p>
       </div>
 
-      <AdminDashboardClient initialUsers={users as any} initialRoutings={routings as any} />
+      <AdminDashboardClient initialUsers={users as any} initialRoutings={routings as any} initialUi={ui as any} />
     </div>
   );
 }

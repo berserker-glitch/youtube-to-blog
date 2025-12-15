@@ -19,6 +19,10 @@ type RoutingRow = {
   feedbackModel: string;
 };
 
+type UiConfig = {
+  showArticleCost: boolean;
+};
+
 function fmtDate(v: string | Date) {
   const d = typeof v === 'string' ? new Date(v) : v;
   return d.toLocaleString();
@@ -27,9 +31,11 @@ function fmtDate(v: string | Date) {
 export function AdminDashboardClient(props: {
   initialUsers: UserRow[];
   initialRoutings: RoutingRow[];
+  initialUi: UiConfig;
 }) {
   const [users, setUsers] = useState<UserRow[]>(props.initialUsers);
   const [routings, setRoutings] = useState<RoutingRow[]>(props.initialRoutings);
+  const [ui, setUi] = useState<UiConfig>(props.initialUi);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [validation, setValidation] = useState<Record<string, string>>({});
@@ -114,6 +120,26 @@ export function AdminDashboardClient(props: {
     );
   };
 
+  const toggleShowCost = async (next: boolean) => {
+    setMsg(null);
+    setBusy('ui:cost');
+    try {
+      const res = await fetch('/api/admin/config/ui', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showArticleCost: next }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || 'Update failed');
+      setUi(json.ui);
+      setMsg('UI settings updated.');
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Unknown error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className='space-y-8'>
       {msg ? (
@@ -121,6 +147,43 @@ export function AdminDashboardClient(props: {
           {msg}
         </div>
       ) : null}
+
+      <section className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-5 sm:p-6'>
+        <h2 className='text-lg font-medium text-zinc-900 dark:text-zinc-50'>
+          UI settings
+        </h2>
+        <p className='mt-1 text-sm text-zinc-700 dark:text-zinc-300'>
+          Control what regular users can see.
+        </p>
+
+        <div className='mt-4 flex items-center justify-between gap-4 rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/40 p-4'>
+          <div>
+            <p className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
+              Show article generation cost
+            </p>
+            <p className='mt-1 text-xs text-zinc-500 dark:text-zinc-400'>
+              When disabled, users will not see the $ cost next to articles.
+            </p>
+          </div>
+
+          <button
+            type='button'
+            disabled={busy !== null}
+            onClick={() => toggleShowCost(!ui.showArticleCost)}
+            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
+              ui.showArticleCost
+                ? 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                : 'border border-zinc-300/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/40 text-zinc-900 dark:text-zinc-100 hover:bg-white dark:hover:bg-zinc-900'
+            }`}
+          >
+            {busy === 'ui:cost'
+              ? 'Saving…'
+              : ui.showArticleCost
+                ? 'Enabled'
+                : 'Disabled'}
+          </button>
+        </div>
+      </section>
 
       <section className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-5 sm:p-6'>
         <h2 className='text-lg font-medium text-zinc-900 dark:text-zinc-50'>

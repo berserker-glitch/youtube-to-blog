@@ -1,6 +1,6 @@
-import { getSubtitles } from 'youtube-caption-extractor';
 import { NextResponse } from 'next/server';
 import { type NextRequest } from 'next/server';
+import { getSubtitlesWithFallback } from '@/lib/captions';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,10 +11,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch subtitles with timestamps
-    const subtitles = await getSubtitles({ videoID: videoId, lang: 'en' });
+    const { subtitles, usedLang, triedLangs, attempts } =
+      await getSubtitlesWithFallback({ videoID: videoId, lang: 'en' });
 
     if (!subtitles || subtitles.length === 0) {
-      return NextResponse.json({ error: 'No English subtitles available' }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'No subtitles available',
+          debug: { usedLang, triedLangs, attempts },
+        },
+        { status: 400 }
+      );
     }
 
     // Format the transcript with timestamps

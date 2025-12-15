@@ -1,6 +1,6 @@
-import { getSubtitles } from 'youtube-caption-extractor';
 import { NextResponse } from 'next/server';
 import { type NextRequest } from 'next/server';
+import { getSubtitlesWithFallback } from '@/lib/captions';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -12,12 +12,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const subtitles = await getSubtitles({ videoID, lang });
-    return NextResponse.json({ subtitles }, { status: 200 });
+    const { subtitles, usedLang, triedLangs, attempts } =
+      await getSubtitlesWithFallback({ videoID, lang });
+    return NextResponse.json(
+      { subtitles, usedLang, triedLangs, attempts },
+      { status: 200 }
+    );
   } catch (error) {
     return NextResponse.json(
-      { error: (error as Error).message },
-      { status: 500 }
+      { error: (error as Error).message, videoID, requestedLang: lang },
+      { status: 400 }
     );
   }
 }

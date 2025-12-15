@@ -1,4 +1,4 @@
-import { callOpenRouterChat } from '@/lib/openrouter';
+import { callOpenRouterChatDetailed, type OpenRouterUsage } from '@/lib/openrouter';
 import { isNumber, isRecord, isString, tryParseJson } from '@/lib/json';
 
 export interface Chapter {
@@ -78,7 +78,7 @@ export async function generateChapters(params: {
   videoTitle?: string;
   totalDurationSec: number;
   model?: string;
-}): Promise<Chapter[]> {
+}): Promise<{ chapters: Chapter[]; usage?: OpenRouterUsage }> {
   const model = params.model || process.env.OPENROUTER_MODEL_CHAPTERS;
   if (!model) throw new Error('Missing OPENROUTER_MODEL_CHAPTERS');
 
@@ -90,7 +90,7 @@ export async function generateChapters(params: {
     params.totalDurationSec
   )}\n\nTranscript (with timestamps):\n${params.transcriptWithTimestamps}`;
 
-  const content = await callOpenRouterChat({
+  const resp = await callOpenRouterChatDetailed({
     model,
     messages: [
       { role: 'system', content: system },
@@ -101,7 +101,7 @@ export async function generateChapters(params: {
     response_format: { type: 'json_object' },
   });
 
-  const parsed = tryParseJson<ChaptersPayload>(content);
+  const parsed = tryParseJson<ChaptersPayload>(resp.content);
   if (!parsed) throw new Error('Failed to parse chaptering JSON');
 
   const validated = validateChaptersPayload(parsed);
@@ -163,7 +163,7 @@ export async function generateChapters(params: {
     last.endSec = params.totalDurationSec;
   }
 
-  return chapters;
+  return { chapters, usage: resp.usage };
 }
 
 

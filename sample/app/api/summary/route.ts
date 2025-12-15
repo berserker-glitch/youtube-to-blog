@@ -1,7 +1,8 @@
-import { getSubtitles, getVideoDetails } from 'youtube-caption-extractor';
+import { getVideoDetails } from 'youtube-caption-extractor';
 import { NextResponse } from 'next/server';
 import { type NextRequest } from 'next/server';
 import { callOpenRouterChat } from '@/lib/openrouter';
+import { getSubtitlesWithFallback } from '@/lib/captions';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,10 +22,11 @@ export async function POST(request: NextRequest) {
     const videoID = videoIdMatch[1];
 
     // Fetch subtitles and video details
-    const [subtitles, videoDetails] = await Promise.all([
-      getSubtitles({ videoID, lang: 'en' }),
-      getVideoDetails({ videoID, lang: 'en' })
+    const [subsResult, videoDetails] = await Promise.all([
+      getSubtitlesWithFallback({ videoID, lang: 'en' }),
+      getVideoDetails({ videoID, lang: 'en' }),
     ]);
+    const subtitles = subsResult.subtitles;
 
     // Combine all subtitle text and truncate if too long
     let transcriptText = subtitles.map((subtitle: any) => subtitle.text).join(' ');

@@ -54,30 +54,30 @@ export default async function AppLayout({
                 </>
               ) : (
                 <>
-                  <Link
-                    href='/app/generate'
-                    className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
-                  >
-                    Generate
-                  </Link>
-                  <Link
-                    href='/app/articles'
-                    className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
-                  >
-                    Articles
-                  </Link>
-                  <Link
-                    href='/app/integrations/wordpress'
-                    className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
-                  >
-                    WordPress
-                  </Link>
-                  <Link
-                    href='/app/settings'
-                    className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
-                  >
-                    Settings
-                  </Link>
+              <Link
+                href='/app/generate'
+                className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
+              >
+                Generate
+              </Link>
+              <Link
+                href='/app/articles'
+                className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
+              >
+                Articles
+              </Link>
+              <Link
+                href='/app/integrations/wordpress'
+                className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
+              >
+                WordPress
+              </Link>
+              <Link
+                href='/app/settings'
+                className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
+              >
+                Settings
+              </Link>
                 </>
               )}
             </nav>

@@ -1,6 +1,14 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getAppServerSession } from '@/lib/auth-helpers';
+import { getUiConfig } from '@/lib/app-config';
+
+function formatUsd(v: unknown): string | null {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return null;
+  if (v === 0) return '$0.00';
+  const digits = v < 0.01 ? 5 : v < 0.1 ? 4 : 3;
+  return `$${v.toFixed(digits)}`;
+}
 
 export default async function ArticlesPage() {
   const session = await getAppServerSession();
@@ -32,8 +40,10 @@ export default async function ArticlesPage() {
       videoId: true,
       createdAt: true,
       status: true,
+      metaJson: true,
     },
   });
+  const ui = await getUiConfig();
 
   return (
     <div>
@@ -76,6 +86,12 @@ export default async function ArticlesPage() {
                   <p className='mt-1 text-base sm:text-lg font-medium text-zinc-900 dark:text-zinc-100'>
                     {a.title}
                   </p>
+                  {ui.showArticleCost ? (
+                    <p className='mt-2 text-xs text-zinc-500 dark:text-zinc-400'>
+                      Cost:{' '}
+                      {formatUsd(a?.metaJson?.generationCost?.totalUsd) || '—'}
+                    </p>
+                  ) : null}
                   <p className='mt-3 text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2'>
                     Source: {a.videoUrl}
                   </p>

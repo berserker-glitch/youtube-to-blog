@@ -1,9 +1,17 @@
-import { callOpenRouterChat } from '@/lib/openrouter';
+import {
+  callOpenRouterChatDetailed,
+  type OpenRouterUsage,
+} from '@/lib/openrouter';
 import type { Chapter } from '@/lib/chaptering';
 
 export interface VideoMetaForWriting {
   title?: string;
   description?: string;
+}
+
+export interface LlmTextResult {
+  content: string;
+  usage?: OpenRouterUsage;
 }
 
 function strictWriterSystemPrompt() {
@@ -17,13 +25,13 @@ export async function writeSection(params: {
   overallTargetWords: number;
   targetWords: number;
   model?: string;
-}): Promise<string> {
+}): Promise<LlmTextResult> {
   const model = params.model || process.env.OPENROUTER_MODEL_WRITER;
   if (!model) throw new Error('Missing OPENROUTER_MODEL_WRITER');
 
   const user = `Overall article constraint:\n- The finished article MUST be approximately ${params.overallTargetWords} words total.\n\nThis section constraint:\n- Target length for THIS section: approximately ${params.targetWords} words (±10%).\n- Before writing, internally plan how to hit the word budget while staying faithful to the source content.\n\nWrite the next article section.\n\nSection metadata:\n- Section title: ${params.chapter.title}\n- Section thesis: ${params.chapter.thesis}\n- Primary keyword: ${params.chapter.primaryKeyword}\n- Secondary keywords: ${(params.chapter.secondaryKeywords || []).join(', ')}\n\nContext:\n- Title: ${params.video.title || 'Unknown'}\n- Description: ${params.video.description || ''}\n\nSource transcript slice (do NOT quote timestamps and do NOT mention you used a transcript):\n${params.transcriptSlice}\n\nFormatting requirements:\n- Start with \"## ${params.chapter.title}\".\n- Include multiple ### subheadings where appropriate.\n- Output ONLY Markdown.\n`;
 
-  return await callOpenRouterChat({
+  return await callOpenRouterChatDetailed({
     model,
     messages: [
       { role: 'system', content: strictWriterSystemPrompt() },
@@ -41,7 +49,7 @@ export async function writeIntroduction(params: {
   overallTargetWords: number;
   targetWords: number;
   model?: string;
-}): Promise<string> {
+}): Promise<LlmTextResult> {
   const model = params.model || process.env.OPENROUTER_MODEL_WRITER;
   if (!model) throw new Error('Missing OPENROUTER_MODEL_WRITER');
 
@@ -54,7 +62,7 @@ export async function writeIntroduction(params: {
 
   const user = `Overall article constraint:\n- The finished article MUST be approximately ${params.overallTargetWords} words total.\n\nIntroduction constraint:\n- Target length for the introduction: approximately ${params.targetWords} words (±10%).\n- Before writing, internally plan how to set up the full article while respecting the word budget.\n\nWrite a compelling introduction for a long-form article titled:\n${params.articleTitle}\n\nContext:\n- Title: ${params.video.title || 'Unknown'}\n- Description: ${params.video.description || ''}\n\nPlanned structure (for your awareness; do NOT refer to this as chapters in the output):\n${chapterList}\n\nRequirements:\n- Output Markdown only.\n- Do NOT use a header for the introduction.\n- Prefer long, flowing paragraphs.\n`;
 
-  return await callOpenRouterChat({
+  return await callOpenRouterChatDetailed({
     model,
     messages: [
       { role: 'system', content: strictWriterSystemPrompt() },
@@ -72,7 +80,7 @@ export async function writeConclusion(params: {
   overallTargetWords: number;
   targetWords: number;
   model?: string;
-}): Promise<string> {
+}): Promise<LlmTextResult> {
   const model = params.model || process.env.OPENROUTER_MODEL_WRITER;
   if (!model) throw new Error('Missing OPENROUTER_MODEL_WRITER');
 
@@ -82,7 +90,7 @@ export async function writeConclusion(params: {
 
   const user = `Overall article constraint:\n- The finished article MUST be approximately ${params.overallTargetWords} words total.\n\nConclusion constraint:\n- Target length for the conclusion: approximately ${params.targetWords} words (±10%).\n- Before writing, internally plan how to synthesize the core ideas without repeating.\n\nWrite a synthesized conclusion for the article titled:\n${params.articleTitle}\n\nKey sections and theses:\n${chapterList}\n\nRequirements:\n- Output Markdown only.\n- Start with \"## Conclusion\".\n- Prefer long, flowing paragraphs.\n- No fluff.\n`;
 
-  return await callOpenRouterChat({
+  return await callOpenRouterChatDetailed({
     model,
     messages: [
       { role: 'system', content: strictWriterSystemPrompt() },
@@ -102,13 +110,13 @@ export async function getDraftFeedback(params: {
   video: VideoMetaForWriting;
   draftMarkdown: string;
   model?: string;
-}): Promise<string> {
+}): Promise<LlmTextResult> {
   const model = params.model;
   if (!model) throw new Error('Missing feedback model');
 
   const user = `Article title: ${params.articleTitle}\n\nContext:\n- Title: ${params.video.title || 'Unknown'}\n- Description: ${params.video.description || ''}\n\nDraft article (Markdown):\n${params.draftMarkdown}\n\nReturn feedback following the required output format.\n`;
 
-  return await callOpenRouterChat({
+  return await callOpenRouterChatDetailed({
     model,
     messages: [
       { role: 'system', content: feedbackSystemPrompt() },
@@ -128,7 +136,7 @@ export async function reviseIntroductionWithFeedback(params: {
   originalIntro: string;
   feedbackMarkdown: string;
   model?: string;
-}): Promise<string> {
+}): Promise<LlmTextResult> {
   const model = params.model;
   if (!model) throw new Error('Missing revision writer model');
 
@@ -141,7 +149,7 @@ export async function reviseIntroductionWithFeedback(params: {
 
   const user = `You previously wrote this introduction draft:\n${params.originalIntro}\n\nHere is editorial feedback on the full draft article:\n${params.feedbackMarkdown}\n\nRevise the introduction for the article titled:\n${params.articleTitle}\n\nConstraints:\n- Target length: approximately ${params.targetWords} words (±10%).\n- Do NOT add a header.\n- Do NOT reference the video, transcript, chapters, or feedback.\n- Prefer long, flowing paragraphs.\n\nContext:\n- Title: ${params.video.title || 'Unknown'}\n- Description: ${params.video.description || ''}\n\nPlanned structure (for your awareness; do NOT refer to this as chapters in the output):\n${chapterList}\n\nOutput Markdown only.\n`;
 
-  return await callOpenRouterChat({
+  return await callOpenRouterChatDetailed({
     model,
     messages: [
       { role: 'system', content: strictWriterSystemPrompt() },
@@ -161,13 +169,13 @@ export async function reviseSectionWithFeedback(params: {
   originalSection: string;
   feedbackMarkdown: string;
   model?: string;
-}): Promise<string> {
+}): Promise<LlmTextResult> {
   const model = params.model;
   if (!model) throw new Error('Missing revision writer model');
 
   const user = `You previously wrote this section draft:\n${params.originalSection}\n\nHere is editorial feedback on the full draft article:\n${params.feedbackMarkdown}\n\nRevise this section.\n\nConstraints:\n- Target length for THIS section: approximately ${params.targetWords} words (±10%).\n- Must start with \"## ${params.chapter.title}\".\n- Include multiple ### subheadings where appropriate.\n- Do NOT reference the video, transcript, chapters, or feedback.\n\nSection metadata:\n- Section title: ${params.chapter.title}\n- Section thesis: ${params.chapter.thesis}\n- Primary keyword: ${params.chapter.primaryKeyword}\n- Secondary keywords: ${(params.chapter.secondaryKeywords || []).join(', ')}\n\nContext:\n- Title: ${params.video.title || 'Unknown'}\n- Description: ${params.video.description || ''}\n\nSource transcript slice (do NOT quote timestamps and do NOT mention you used a transcript):\n${params.transcriptSlice}\n\nOutput ONLY Markdown.\n`;
 
-  return await callOpenRouterChat({
+  return await callOpenRouterChatDetailed({
     model,
     messages: [
       { role: 'system', content: strictWriterSystemPrompt() },
@@ -187,7 +195,7 @@ export async function reviseConclusionWithFeedback(params: {
   originalConclusion: string;
   feedbackMarkdown: string;
   model?: string;
-}): Promise<string> {
+}): Promise<LlmTextResult> {
   const model = params.model;
   if (!model) throw new Error('Missing revision writer model');
 
@@ -197,7 +205,7 @@ export async function reviseConclusionWithFeedback(params: {
 
   const user = `You previously wrote this conclusion draft:\n${params.originalConclusion}\n\nHere is editorial feedback on the full draft article:\n${params.feedbackMarkdown}\n\nRevise the conclusion for the article titled:\n${params.articleTitle}\n\nConstraints:\n- Target length: approximately ${params.targetWords} words (±10%).\n- Start with \"## Conclusion\".\n- Do NOT reference the video, transcript, chapters, or feedback.\n- Prefer long, flowing paragraphs.\n- No fluff.\n\nKey sections and theses:\n${chapterList}\n\nOutput Markdown only.\n`;
 
-  return await callOpenRouterChat({
+  return await callOpenRouterChatDetailed({
     model,
     messages: [
       { role: 'system', content: strictWriterSystemPrompt() },

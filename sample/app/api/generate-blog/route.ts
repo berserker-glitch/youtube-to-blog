@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { type NextRequest } from 'next/server';
-import { getSubtitles, getVideoDetails } from 'youtube-caption-extractor';
+import { getVideoDetails } from 'youtube-caption-extractor';
 import { parseYouTubeUrl } from '@/lib/youtube';
 import {
   chunkTranscript,
@@ -25,6 +25,12 @@ import { prisma } from '@/lib/db';
 import { assertGenerationLimit, formatPlanLimitLabel } from '@/lib/rate-limit';
 import type { UserPlan } from '@/lib/plan';
 import { getModelRoutingForPlan } from '@/lib/model-routing';
+import { getSubtitlesWithFallback } from '@/lib/captions';
+import {
+  computeOpenRouterCostUsd,
+  getOpenRouterModelPricing,
+  type OpenRouterModelPricing,
+} from '@/lib/openrouter-pricing';
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,6 +68,39 @@ export async function POST(request: NextRequest) {
     }
 
     const models = await getModelRoutingForPlan(plan);
+    const modelIds = Array.from(
+      new Set([models.chaptersModel, models.writerModel, models.feedbackModel])
+    );
+    const pricingEntries = await Promise.all(
+      modelIds.map(async (id) => [id, await getOpenRouterModelPricing(id)] as const)
+    );
+    const pricingByModel = new Map<string, OpenRouterModelPricing | null>(
+      pricingEntries
+    );
+
+    const costCalls: Array<{
+      step: string;
+      model: string;
+      usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+      costUsd?: number;
+    }> = [];
+
+    const pushCost = (step: string, model: string, usage?: any) => {
+      const pricing = pricingByModel.get(model) || null;
+      const u = usage as
+        | { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+        | undefined;
+      const costUsd =
+        pricing && u
+          ? computeOpenRouterCostUsd({
+              pricing,
+              promptTokens: u.prompt_tokens,
+              completionTokens: u.completion_tokens,
+            })
+          : undefined;
+      costCalls.push({ step, model, usage: u, costUsd });
+      return costUsd;
+    };
 
     const body = await request.json();
     const youtubeUrl = (body?.youtubeUrl || '').toString();
@@ -71,13 +110,44 @@ export async function POST(request: NextRequest) {
     console.log('[generate-blog] validated input', { videoId, lang });
 
     console.log('[generate-blog] fetching subtitles + video details');
-    const [subtitles, videoDetails] = await Promise.all([
-      getSubtitles({ videoID: videoId, lang }),
-      getVideoDetails({ videoID: videoId, lang }),
-    ]);
+    const videoDetailsPromise = getVideoDetails({ videoID: videoId, lang });
+
+    let subtitlesResult: Awaited<ReturnType<typeof getSubtitlesWithFallback>>;
+    try {
+      subtitlesResult = await getSubtitlesWithFallback({ videoID: videoId, lang });
+    } catch (e) {
+      const videoDetails = await videoDetailsPromise.catch(() => null as any);
+      const msg = e instanceof Error ? e.message : 'No captions found';
+      console.warn('[generate-blog] subtitles fetch failed', {
+        videoId,
+        lang,
+        error: msg,
+      });
+      return NextResponse.json(
+        {
+          error: `No captions/transcript available for this video (requested: ${lang}).`,
+          debug: {
+            videoId,
+            requestedLang: lang,
+            videoTitle: videoDetails?.title || null,
+            hint:
+              'This can be intermittent (throttling). Try again, or use a different video. We also attempt English auto-captions.',
+            details: msg,
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    const { subtitles, usedLang, triedLangs, attempts } = subtitlesResult;
+    const videoDetails = await videoDetailsPromise;
+
     console.log('[generate-blog] fetched', {
       subtitlesCount: subtitles?.length || 0,
       title: videoDetails?.title || 'Unknown',
+      captionsLang: usedLang,
+      triedLangs,
+      attempts: attempts.length,
     });
 
     if (!subtitles || subtitles.length === 0) {
@@ -114,12 +184,14 @@ export async function POST(request: NextRequest) {
     console.log('[generate-blog] generating semantic chapters', {
       model: models.chaptersModel,
     });
-    const chapters = await generateChapters({
+    const chaptersResp = await generateChapters({
       transcriptWithTimestamps: transcriptForChaptering,
       videoTitle: videoDetails?.title,
       totalDurationSec,
       model: models.chaptersModel,
     });
+    pushCost('chapters', models.chaptersModel, chaptersResp.usage);
+    const chapters = chaptersResp.chapters;
     console.log('[generate-blog] chapters ready', {
       count: chapters.length,
       titles: chapters.map((c) => c.title).slice(0, 12),
@@ -150,7 +222,7 @@ export async function POST(request: NextRequest) {
     console.log('[generate-blog] writing introduction', {
       model: models.writerModel,
     });
-    const initialIntro = await writeIntroduction({
+    const initialIntroResp = await writeIntroduction({
       articleTitle,
       chapters,
       video: {
@@ -161,8 +233,9 @@ export async function POST(request: NextRequest) {
       targetWords: introTargetWords,
       model: models.writerModel,
     });
+    pushCost('write:intro:v1', models.writerModel, initialIntroResp.usage);
 
-    const initialSections: string[] = [];
+    const initialSections: Array<{ content: string; usage?: any }> = [];
     for (const chapter of chapters) {
       console.log('[generate-blog] writing section', {
         id: chapter.id,
@@ -177,7 +250,7 @@ export async function POST(request: NextRequest) {
       );
       const sliceText = formatSegmentsForLLM(slice);
 
-      const section = await writeSection({
+      const sectionResp = await writeSection({
         chapter,
         transcriptSlice: sliceText,
         video: {
@@ -188,11 +261,12 @@ export async function POST(request: NextRequest) {
         targetWords: perSectionTargetWords,
         model: models.writerModel,
       });
-      initialSections.push(section);
+      pushCost(`write:section:v1:${chapter.id}`, models.writerModel, sectionResp.usage);
+      initialSections.push(sectionResp);
     }
 
     console.log('[generate-blog] writing conclusion');
-    const initialConclusion = await writeConclusion({
+    const initialConclusionResp = await writeConclusion({
       articleTitle,
       chapters,
       video: {
@@ -203,14 +277,15 @@ export async function POST(request: NextRequest) {
       targetWords: conclusionTargetWords,
       model: models.writerModel,
     });
+    pushCost('write:conclusion:v1', models.writerModel, initialConclusionResp.usage);
 
     console.log('[generate-blog] assembling initial markdown');
     const initialMd = assembleMarkdown({
       articleTitle,
-      intro: initialIntro,
+      intro: initialIntroResp.content,
       chapters,
-      sections: initialSections,
-      conclusion: initialConclusion,
+      sections: initialSections.map((s) => s.content),
+      conclusion: initialConclusionResp.content,
       video: {
         title: videoDetails?.title,
         description: videoDetails?.description,
@@ -221,26 +296,28 @@ export async function POST(request: NextRequest) {
     console.log('[generate-blog] generating feedback', {
       model: models.feedbackModel,
     });
-    const feedback = await getDraftFeedback({
+    const feedbackResp = await getDraftFeedback({
       articleTitle,
       video: { title: videoDetails?.title, description: videoDetails?.description },
       draftMarkdown: initialMd,
       model: models.feedbackModel,
     });
+    pushCost('feedback', models.feedbackModel, feedbackResp.usage);
 
     console.log('[generate-blog] revising introduction');
-    const intro = await reviseIntroductionWithFeedback({
+    const introResp = await reviseIntroductionWithFeedback({
       articleTitle,
       chapters,
       video: { title: videoDetails?.title, description: videoDetails?.description },
       overallTargetWords,
       targetWords: introTargetWords,
-      originalIntro: initialIntro,
-      feedbackMarkdown: feedback,
+      originalIntro: initialIntroResp.content,
+      feedbackMarkdown: feedbackResp.content,
       model: models.writerModel,
     });
+    pushCost('write:intro:v2', models.writerModel, introResp.usage);
 
-    const sections: string[] = [];
+    const sections: Array<{ content: string; usage?: any }> = [];
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
       console.log('[generate-blog] revising section', {
@@ -255,38 +332,40 @@ export async function POST(request: NextRequest) {
       );
       const sliceText = formatSegmentsForLLM(slice);
 
-      const revised = await reviseSectionWithFeedback({
+      const revisedResp = await reviseSectionWithFeedback({
         chapter,
         transcriptSlice: sliceText,
         video: { title: videoDetails?.title, description: videoDetails?.description },
         overallTargetWords,
         targetWords: perSectionTargetWords,
-        originalSection: initialSections[i] || '',
-        feedbackMarkdown: feedback,
+        originalSection: initialSections[i]?.content || '',
+        feedbackMarkdown: feedbackResp.content,
         model: models.writerModel,
       });
-      sections.push(revised);
+      pushCost(`write:section:v2:${chapter.id}`, models.writerModel, revisedResp.usage);
+      sections.push(revisedResp);
     }
 
     console.log('[generate-blog] revising conclusion');
-    const conclusion = await reviseConclusionWithFeedback({
+    const conclusionResp = await reviseConclusionWithFeedback({
       articleTitle,
       chapters,
       video: { title: videoDetails?.title, description: videoDetails?.description },
       overallTargetWords,
       targetWords: conclusionTargetWords,
-      originalConclusion: initialConclusion,
-      feedbackMarkdown: feedback,
+      originalConclusion: initialConclusionResp.content,
+      feedbackMarkdown: feedbackResp.content,
       model: models.writerModel,
     });
+    pushCost('write:conclusion:v2', models.writerModel, conclusionResp.usage);
 
     console.log('[generate-blog] assembling final markdown');
     const md = assembleMarkdown({
       articleTitle,
-      intro,
+      intro: introResp.content,
       chapters,
-      sections,
-      conclusion,
+      sections: sections.map((s) => s.content),
+      conclusion: conclusionResp.content,
       video: {
         title: videoDetails?.title,
         description: videoDetails?.description,
@@ -295,6 +374,21 @@ export async function POST(request: NextRequest) {
     });
 
     const filename = `${slugify(articleTitle)}.md`;
+
+    const chaptersCost = costCalls
+      .filter((c) => c.step === 'chapters')
+      .reduce((sum, c) => sum + (c.costUsd || 0), 0);
+    const feedbackCost = costCalls
+      .filter((c) => c.step === 'feedback')
+      .reduce((sum, c) => sum + (c.costUsd || 0), 0);
+    const writingV1Cost = costCalls
+      .filter((c) => c.step.startsWith('write:') && c.step.includes(':v1'))
+      .reduce((sum, c) => sum + (c.costUsd || 0), 0);
+    const writingV2Cost = costCalls
+      .filter((c) => c.step.startsWith('write:') && c.step.includes(':v2'))
+      .reduce((sum, c) => sum + (c.costUsd || 0), 0);
+    const totalUsd = costCalls.reduce((sum, c) => sum + (c.costUsd || 0), 0);
+    const unknownCalls = costCalls.filter((c) => c.costUsd === undefined).length;
 
     console.log('[generate-blog] persisting article');
     await prisma.article.create({
@@ -320,6 +414,20 @@ export async function POST(request: NextRequest) {
             feedback: models.feedbackModel,
             revisionWriter: models.writerModel,
             plan,
+          },
+          generationCost: {
+            currency: 'USD',
+            totalUsd,
+            unknownCalls,
+            breakdownUsd: {
+              chapters: chaptersCost,
+              writingV1: writingV1Cost,
+              feedback: feedbackCost,
+              writingV2: writingV2Cost,
+            },
+            pricing: Object.fromEntries(pricingEntries),
+            calls: costCalls,
+            computedAt: new Date().toISOString(),
           },
           generationLimit: limitState
             ? {

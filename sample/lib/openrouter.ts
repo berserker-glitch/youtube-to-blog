@@ -24,6 +24,22 @@ export interface OpenRouterChatChoice {
 
 export interface OpenRouterChatResponse {
   choices?: OpenRouterChatChoice[];
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+}
+
+export interface OpenRouterUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+
+export interface OpenRouterChatResult {
+  content: string;
+  usage?: OpenRouterUsage;
 }
 
 function requireEnv(name: string): string {
@@ -40,9 +56,21 @@ export function getOpenRouterConfig() {
   };
 }
 
-export async function callOpenRouterChat(
+function normalizeUsage(v: OpenRouterChatResponse['usage']): OpenRouterUsage | undefined {
+  if (!v) return undefined;
+  const prompt = typeof v.prompt_tokens === 'number' ? v.prompt_tokens : NaN;
+  const completion =
+    typeof v.completion_tokens === 'number' ? v.completion_tokens : NaN;
+  const total = typeof v.total_tokens === 'number' ? v.total_tokens : NaN;
+  if (!Number.isFinite(prompt) || !Number.isFinite(completion) || !Number.isFinite(total)) {
+    return undefined;
+  }
+  return { prompt_tokens: prompt, completion_tokens: completion, total_tokens: total };
+}
+
+export async function callOpenRouterChatDetailed(
   params: OpenRouterChatParams
-): Promise<string> {
+): Promise<OpenRouterChatResult> {
   const cfg = getOpenRouterConfig();
 
   const headers: Record<string, string> = {
@@ -73,7 +101,15 @@ export async function callOpenRouterChat(
   const data = (await resp.json()) as OpenRouterChatResponse;
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error('OpenRouter returned an empty response');
-  return content;
+
+  return { content, usage: normalizeUsage(data.usage) };
+}
+
+export async function callOpenRouterChat(
+  params: OpenRouterChatParams
+): Promise<string> {
+  const r = await callOpenRouterChatDetailed(params);
+  return r.content;
 }
 
 

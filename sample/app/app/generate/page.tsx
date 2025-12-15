@@ -97,7 +97,22 @@ export default function GeneratePage() {
     window.setTimeout(() => setCopied(false), 1200);
   };
 
+  const pasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) setVideoUrl(text.trim());
+    } catch {
+      // Ignore if clipboard permissions are blocked.
+    }
+  };
+
   const handleGenerate = async () => {
+    const runId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    console.groupCollapsed(`[generate] start ${runId}`);
+    console.log('videoUrl', videoUrl);
+    console.log('isValidUrl', isValidUrl);
+    console.log('canGenerate', canGenerate);
+
     setError(null);
     setMarkdown('');
     setCopied(false);
@@ -113,6 +128,7 @@ export default function GeneratePage() {
     const t3 = window.setTimeout(() => setPhase('assembling'), 7000);
 
     try {
+      console.log('POST /api/generate-blog payload', { youtubeUrl: videoUrl, lang: 'en' });
       const resp = await fetch('/api/generate-blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -120,21 +136,31 @@ export default function GeneratePage() {
         signal: ctrl.signal,
       });
 
+      console.log('response status', resp.status, resp.statusText);
+      console.log('response headers', {
+        'content-type': resp.headers.get('content-type'),
+        'content-disposition': resp.headers.get('content-disposition'),
+      });
+
       if (!resp.ok) {
         const json = await resp.json().catch(() => null);
+        console.log('error json', json);
         throw new Error(json?.error || `Request failed (${resp.status})`);
       }
 
       const md = await resp.text();
+      console.log('markdown bytes', md.length);
       const disposition = resp.headers.get('content-disposition') || '';
       const match = disposition.match(/filename="([^"]+)"/i);
       const name = match?.[1] || 'articlealchemist.md';
+      console.log('filename', name);
 
       setFilename(name);
       setMarkdown(md);
       setPhase('done');
     } catch (e) {
       if ((e as any)?.name === 'AbortError') return;
+      console.error('generation failed', e);
       setError(e instanceof Error ? e.message : 'Unknown error');
       setPhase('error');
     } finally {
@@ -142,12 +168,18 @@ export default function GeneratePage() {
       window.clearTimeout(t2);
       window.clearTimeout(t3);
       setIsGenerating(false);
+      console.groupEnd();
     }
   };
 
   return (
     <div>
       <div className='mb-8'>
+        <div className='inline-flex items-center gap-2 rounded-full border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/40 px-3 py-1 text-xs text-zinc-700 dark:text-zinc-300'>
+          Generator
+          <span className='h-1.5 w-1.5 rounded-full bg-emerald-500' />
+          Video → Article
+        </div>
         <h1 className='text-3xl md:text-4xl font-light tracking-tight'>
           Generate an article
         </h1>
@@ -159,6 +191,33 @@ export default function GeneratePage() {
 
       <div className='grid grid-cols-1 xl:grid-cols-2 gap-6'>
         <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/40 p-5 shadow-sm'>
+          <div className='flex items-start justify-between gap-3'>
+            <div>
+              <p className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>
+                Input
+              </p>
+              <p className='mt-1 text-xs text-zinc-500 dark:text-zinc-400'>
+                Tip: if the selected language is missing, we fall back to English auto-captions when available.
+              </p>
+            </div>
+            <div className='flex items-center gap-2'>
+              <button
+                type='button'
+                onClick={pasteFromClipboard}
+                className='rounded-xl border border-zinc-300/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/40 px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 hover:bg-white dark:hover:bg-zinc-900 transition-colors'
+              >
+                Paste
+              </button>
+              <button
+                type='button'
+                onClick={() => setVideoUrl('')}
+                className='rounded-xl border border-zinc-300/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/40 px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 hover:bg-white dark:hover:bg-zinc-900 transition-colors'
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
           <label className='block text-sm font-medium text-zinc-800 dark:text-zinc-200 mb-2'>
             YouTube URL
           </label>
@@ -166,7 +225,7 @@ export default function GeneratePage() {
             type='url'
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+            onKeyDown={(e) => e.key === 'Enter' && canGenerate && handleGenerate()}
             placeholder='https://www.youtube.com/watch?v=...'
             className='w-full px-4 py-3 rounded-xl border border-zinc-300/70 dark:border-zinc-800 bg-white dark:bg-zinc-950/40 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20 transition-all'
           />
@@ -257,6 +316,12 @@ export default function GeneratePage() {
 
           {markdown && (
             <div className='mt-4 grid grid-cols-1 gap-3'>
+              <div className='rounded-xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-4'>
+                <p className='text-xs text-zinc-500 dark:text-zinc-400'>Output file</p>
+                <p className='mt-1 text-sm font-medium text-zinc-900 dark:text-zinc-100 break-words'>
+                  {filename}
+                </p>
+              </div>
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                 <button
                   onClick={() => triggerDownload(markdown, filename)}
@@ -275,7 +340,15 @@ export default function GeneratePage() {
           )}
         </div>
 
-        <MarkdownViewer markdown={markdown} />
+        <div className='space-y-4'>
+          <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/40 p-5 shadow-sm'>
+            <p className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>Preview</p>
+            <p className='mt-1 text-xs text-zinc-500 dark:text-zinc-400'>
+              Switch between a rendered preview and the raw Markdown.
+            </p>
+          </div>
+          <MarkdownViewer markdown={markdown} />
+        </div>
       </div>
     </div>
   );
