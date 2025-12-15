@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "cd sample && next dev",
-    "build": "cd sample && next build",
+    "build": "cd sample && prisma generate && next build",
     "start": "cd sample && next start",
     "lint": "next lint"
   },
