@@ -35,7 +35,7 @@ export default function ContactPage() {
               Contact Information
             </h1>
             <p className='mt-3 text-zinc-700 dark:text-zinc-300'>
-              Get in touch with Scolink, the company behind ArticleAlchemist. We're here to help with any questions about our service.
+              Get in touch with Scolink, the company behind ArticleAlchemist. We are here to help with any questions about our service.
             </p>
           </section>
 
@@ -71,7 +71,7 @@ export default function ContactPage() {
               Response Time
             </h2>
             <p className='mt-2 text-zinc-700 dark:text-zinc-300'>
-              We aim to respond to all inquiries within 24-48 hours during business days. For urgent technical issues, please include "URGENT" in your email subject line.
+              We aim to respond to all inquiries within 24-48 hours during business days. For urgent technical issues, please include URGENT in your email subject line.
             </p>
           </section>
 
