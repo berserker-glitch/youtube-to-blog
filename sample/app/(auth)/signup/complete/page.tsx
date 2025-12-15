@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { ThemeToggle } from '@/app/_components/ThemeToggle';
 
-export default function SignupCompletePage() {
+function SignupCompletePageInner() {
   const search = useSearchParams();
   const router = useRouter();
   const token = search.get('token') || '';
@@ -200,6 +200,22 @@ export default function SignupCompletePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupCompletePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className='min-h-screen bg-[#fbfbfc] dark:bg-[#06070a] flex items-center justify-center text-zinc-900 dark:text-zinc-50'>
+          <p className='text-sm text-zinc-600 dark:text-zinc-300'>
+            Loading signup completion page...
+          </p>
+        </div>
+      }
+    >
+      <SignupCompletePageInner />
+    </Suspense>
   );
 }
 

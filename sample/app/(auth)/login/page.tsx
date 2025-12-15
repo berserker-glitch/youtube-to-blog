@@ -2,11 +2,11 @@
 
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/app/_components/ThemeToggle';
 
-export default function LoginPage() {
+function LoginPageInner() {
   const search = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -137,6 +137,22 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className='min-h-screen bg-[#fbfbfc] dark:bg-[#06070a] flex items-center justify-center text-zinc-900 dark:text-zinc-50'>
+          <p className='text-sm text-zinc-600 dark:text-zinc-300'>
+            Loading sign-in page...
+          </p>
+        </div>
+      }
+    >
+      <LoginPageInner />
+    </Suspense>
   );
 }
 

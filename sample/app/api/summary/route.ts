@@ -57,15 +57,19 @@ export async function POST(request: NextRequest) {
       max_tokens: 2000,
     });
 
-    return NextResponse.json({
-      summary,
-      videoDetails: {
-        title: videoDetails.title,
-        description: videoDetails.description,
-        thumbnail: videoDetails.thumbnail
+    return NextResponse.json(
+      {
+        summary,
+        videoDetails: {
+          title: videoDetails.title,
+          description: videoDetails.description,
+          // Cast to any to allow optional/undocumented fields without type errors
+          thumbnail: (videoDetails as any).thumbnail,
+        },
+        transcriptLength: transcriptText.length,
       },
-      transcriptLength: transcriptText.length
-    }, { status: 200 });
+      { status: 200 }
+    );
 
   } catch (error) {
     console.error('Summary generation error:', error);
