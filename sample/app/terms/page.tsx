@@ -11,7 +11,7 @@ export default function TermsPage() {
             <div className='h-9 w-9 rounded-xl bg-zinc-900 dark:bg-white' />
             <div>
               <p className='text-sm text-zinc-600 dark:text-zinc-300'>
-                ArticleAlchemist
+                ArticleAlchemist by Scolink
               </p>
               <p className='text-lg font-medium text-zinc-900 dark:text-zinc-50'>
                 Terms of Service
@@ -36,9 +36,10 @@ export default function TermsPage() {
             </h1>
             <p className='mt-3 text-zinc-700 dark:text-zinc-300'>
               These Terms of Service (&quot;Terms&quot;) govern your access to and
-              use of ArticleAlchemist (the &quot;Service&quot;). By creating an
-              account or using the Service, you agree to be bound by these Terms.
-              If you do not agree, you must not use the Service.
+              use of ArticleAlchemist (the &quot;Service&quot;), operated by Scolink.
+              Scolink is the legal business entity providing this Service.
+              By creating an account or using the Service, you agree to be bound
+              by these Terms. If you do not agree, you must not use the Service.
             </p>
           </section>
 
@@ -140,8 +141,9 @@ export default function TermsPage() {
             <p className='mt-2 text-zinc-700 dark:text-zinc-300'>
               You can cancel your subscription at any time; cancellation will
               take effect at the end of the current billing period, and you will
-              retain access to paid features until that date. Refunds, if any,
-              are handled in accordance with Paddle&apos;s refund policies and
+              retain access to paid features until that date. You can request a
+              refund within 14 days of purchase for any paid subscription. Refunds,
+              if any, are handled in accordance with Paddle&apos;s refund policies and
               applicable consumer protection laws. For billing or refund
               questions, you may contact Paddle using the information included in
               your receipt or the Paddle checkout.
@@ -193,9 +195,11 @@ export default function TermsPage() {
               9. Contact
             </h2>
             <p className='mt-2 text-zinc-700 dark:text-zinc-300'>
-              If you have questions about these Terms or the Service, you can
-              reach us at the contact email listed in the app or on your receipt
-              from Paddle.
+              If you have questions about these Terms or the Service, please visit our{' '}
+              <Link href='/contact' className='text-indigo-600 dark:text-indigo-400 hover:underline'>
+                contact page
+              </Link>{' '}
+              or contact Paddle support for billing-related questions.
             </p>
           </section>
         </main>

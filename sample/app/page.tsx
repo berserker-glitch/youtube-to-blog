@@ -73,7 +73,7 @@ export default function HomePage() {
                     ArticleAlchemist
                   </p>
                   <p className='hidden sm:block text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate'>
-                    From video to publish-ready article
+                    Scolink Tool • From video to publish-ready article
                   </p>
                 </div>
               </Link>
@@ -92,6 +92,15 @@ export default function HomePage() {
                 <a href='#faq' className='hover:text-zinc-900 dark:hover:text-white transition-colors'>
                   FAQ
                 </a>
+                <Link href='/contact' className='hover:text-zinc-900 dark:hover:text-white transition-colors'>
+                  Contact
+                </Link>
+                <Link href='/terms' className='hover:text-zinc-900 dark:hover:text-white transition-colors'>
+                  Terms
+                </Link>
+                <Link href='/refund' className='hover:text-zinc-900 dark:hover:text-white transition-colors'>
+                  Refund
+                </Link>
               </nav>
 
               {/* Mobile Navigation Button */}
@@ -155,6 +164,27 @@ export default function HomePage() {
                   >
                     FAQ
                   </a>
+                  <Link
+                    href='/contact'
+                    className='text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors py-2'
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Contact
+                  </Link>
+                  <Link
+                    href='/terms'
+                    className='text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors py-2'
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Terms
+                  </Link>
+                  <Link
+                    href='/refund'
+                    className='text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors py-2'
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Refund
+                  </Link>
                   <div className='h-px bg-zinc-200 dark:bg-zinc-800 my-1' />
                   <Link
                     href='/login'
@@ -193,7 +223,7 @@ export default function HomePage() {
               </h1>
 
               <p className='mt-5 text-base sm:text-lg text-zinc-700 dark:text-zinc-300 leading-relaxed max-w-xl'>
-                Stop letting great videos disappear after the upload. ArticleAlchemist turns a YouTube transcript into a clean long-form draft you can publish on your site—structured, readable, and ready for light editing.
+                Stop letting great videos disappear after the upload. ArticleAlchemist is a Scolink tool that turns a YouTube transcript into a clean long-form draft you can publish on your site—structured, readable, and ready for light editing. This is a separate service from Scolink&apos;s other offerings.
               </p>
 
               <div className='mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3'>
@@ -431,8 +461,17 @@ export default function HomePage() {
                 <Link href='/app' className='text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'>
                   App
                 </Link>
+                <Link href='/contact' className='text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'>
+                  Contact
+                </Link>
                 <Link href='/terms' className='text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'>
                   Terms
+                </Link>
+                <Link href='/privacy' className='text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'>
+                  Privacy
+                </Link>
+                <Link href='/refund' className='text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'>
+                  Refund
                 </Link>
               </div>
             </div>
