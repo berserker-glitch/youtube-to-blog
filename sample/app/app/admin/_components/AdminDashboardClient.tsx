@@ -32,6 +32,7 @@ export function AdminDashboardClient(props: {
   const [routings, setRoutings] = useState<RoutingRow[]>(props.initialRoutings);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [validation, setValidation] = useState<Record<string, string>>({});
 
   const routingByPlan = useMemo(() => {
     const m = new Map<RoutingRow['plan'], RoutingRow>();
@@ -81,6 +82,32 @@ export function AdminDashboardClient(props: {
     }
   };
 
+  const testModel = async (plan: RoutingRow['plan'], label: string, model: string) => {
+    setMsg(null);
+    setBusy(`test:${plan}:${label}`);
+    try {
+      const res = await fetch('/api/admin/openrouter/validate-model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || 'Validation failed');
+
+      setValidation((prev) => ({
+        ...prev,
+        [`${plan}:${label}`]: `OK: ${json.id}${json.name ? ` (${json.name})` : ''}`,
+      }));
+      setMsg(`Model OK: ${json.id}`);
+    } catch (e) {
+      const m = e instanceof Error ? e.message : 'Unknown error';
+      setValidation((prev) => ({ ...prev, [`${plan}:${label}`]: `Error: ${m}` }));
+      setMsg(m);
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const setRoutingField = (plan: RoutingRow['plan'], field: keyof Omit<RoutingRow, 'plan'>, value: string) => {
     setRoutings((prev) =>
       prev.map((r) => (r.plan === plan ? { ...r, [field]: value } : r))
@@ -119,6 +146,19 @@ export function AdminDashboardClient(props: {
                   onChange={(e) => setRoutingField(plan, 'chaptersModel', e.target.value)}
                   className='mt-1 w-full rounded-xl border border-zinc-300/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/40 px-3 py-2 text-sm'
                 />
+                <div className='mt-2 flex items-center justify-between gap-3'>
+                  <p className='text-xs text-zinc-500 dark:text-zinc-400 truncate'>
+                    {validation[`${plan}:chapters`] || ''}
+                  </p>
+                  <button
+                    type='button'
+                    disabled={busy !== null}
+                    onClick={() => testModel(plan, 'chapters', r.chaptersModel)}
+                    className='shrink-0 rounded-xl border border-zinc-300/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/40 px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 hover:bg-white dark:hover:bg-zinc-900 transition-colors disabled:opacity-60'
+                  >
+                    {busy === `test:${plan}:chapters` ? 'Testing…' : 'Test'}
+                  </button>
+                </div>
 
                 <label className='mt-3 block text-xs text-zinc-500 dark:text-zinc-400'>Writer model</label>
                 <input
@@ -126,6 +166,19 @@ export function AdminDashboardClient(props: {
                   onChange={(e) => setRoutingField(plan, 'writerModel', e.target.value)}
                   className='mt-1 w-full rounded-xl border border-zinc-300/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/40 px-3 py-2 text-sm'
                 />
+                <div className='mt-2 flex items-center justify-between gap-3'>
+                  <p className='text-xs text-zinc-500 dark:text-zinc-400 truncate'>
+                    {validation[`${plan}:writer`] || ''}
+                  </p>
+                  <button
+                    type='button'
+                    disabled={busy !== null}
+                    onClick={() => testModel(plan, 'writer', r.writerModel)}
+                    className='shrink-0 rounded-xl border border-zinc-300/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/40 px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 hover:bg-white dark:hover:bg-zinc-900 transition-colors disabled:opacity-60'
+                  >
+                    {busy === `test:${plan}:writer` ? 'Testing…' : 'Test'}
+                  </button>
+                </div>
 
                 <label className='mt-3 block text-xs text-zinc-500 dark:text-zinc-400'>Feedback model</label>
                 <input
@@ -133,6 +186,19 @@ export function AdminDashboardClient(props: {
                   onChange={(e) => setRoutingField(plan, 'feedbackModel', e.target.value)}
                   className='mt-1 w-full rounded-xl border border-zinc-300/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/40 px-3 py-2 text-sm'
                 />
+                <div className='mt-2 flex items-center justify-between gap-3'>
+                  <p className='text-xs text-zinc-500 dark:text-zinc-400 truncate'>
+                    {validation[`${plan}:feedback`] || ''}
+                  </p>
+                  <button
+                    type='button'
+                    disabled={busy !== null}
+                    onClick={() => testModel(plan, 'feedback', r.feedbackModel)}
+                    className='shrink-0 rounded-xl border border-zinc-300/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/40 px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 hover:bg-white dark:hover:bg-zinc-900 transition-colors disabled:opacity-60'
+                  >
+                    {busy === `test:${plan}:feedback` ? 'Testing…' : 'Test'}
+                  </button>
+                </div>
 
                 <button
                   disabled={busy !== null}

@@ -6,6 +6,7 @@ import {
   updateModelRouting,
 } from '@/lib/model-routing';
 import type { UserPlan } from '@/lib/plan';
+import { validateOpenRouterModelId } from '@/lib/openrouter-models';
 
 function isPlan(v: unknown): v is UserPlan {
   return v === 'free' || v === 'pro' || v === 'premium';
@@ -46,6 +47,19 @@ export async function PUT(req: Request) {
         { error: 'Missing chaptersModel/writerModel/feedbackModel' },
         { status: 400 }
       );
+    }
+
+    // Server-side validation: prevent storing non-existent OpenRouter models.
+    const validations = await Promise.all([
+      validateOpenRouterModelId(chaptersModel),
+      validateOpenRouterModelId(writerModel),
+      validateOpenRouterModelId(feedbackModel),
+    ]);
+    const bad = validations.find((v) => !v.ok) as
+      | { ok: false; error: string }
+      | undefined;
+    if (bad) {
+      return NextResponse.json({ error: bad.error }, { status: 400 });
     }
 
     const updated = await updateModelRouting({
