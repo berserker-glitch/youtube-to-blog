@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "cd sample && next dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "cd sample && next build",
+    "start": "cd sample && next start",
     "lint": "next lint"
   },
   "dependencies": {
