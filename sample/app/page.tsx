@@ -346,7 +346,7 @@ export default function HomePage() {
                   <p>• Clean headings and readable formatting</p>
                   <p>• Export as Markdown</p>
                   <p>• Saved history in your dashboard</p>
-                  <p>• Fair-use daily cap (2/day in v1)</p>
+                  <p>• Generous daily limit (100/day)</p>
                 </div>
                 <Link
                   href='/signup'
@@ -373,7 +373,7 @@ export default function HomePage() {
                 <p className='mt-2 text-2xl sm:text-3xl font-light'>$0</p>
                 <p className='mt-2 text-sm text-zinc-700 dark:text-zinc-300'>Perfect for trying it on your next video.</p>
                 <div className='mt-6 space-y-2 text-sm text-zinc-700 dark:text-zinc-300'>
-                  <p>• 2 articles/day</p>
+                  <p>• 100 articles/day</p>
                   <p>• Saved library</p>
                   <p>• Markdown export</p>
                 </div>
