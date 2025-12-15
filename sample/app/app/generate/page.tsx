@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MarkdownViewer } from '@/app/_components/MarkdownViewer';
-
-const YT_ID_RE =
-  /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\\s]{11})/i;
+import { parseYouTubeUrl } from '@/lib/youtube';
 
 export default function GeneratePage() {
   const [videoUrl, setVideoUrl] = useState('');
@@ -27,7 +25,12 @@ export default function GeneratePage() {
   const isValidUrl = useMemo(() => {
     const v = videoUrl.trim();
     if (!v) return true;
-    return YT_ID_RE.test(v);
+    try {
+      parseYouTubeUrl(v);
+      return true;
+    } catch {
+      return false;
+    }
   }, [videoUrl]);
 
   const canGenerate = useMemo(
