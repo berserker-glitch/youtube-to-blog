@@ -334,35 +334,52 @@ export default function HomePage() {
               Pricing
             </h2>
             <p className='mt-2 text-zinc-700 dark:text-zinc-300 max-w-2xl text-sm sm:text-base'>
-              Simple today. More options soon.
+              Start free, then upgrade to Pro or Premium when you&apos;re ready.
             </p>
 
             <div className='mt-8 grid grid-cols-1 md:grid-cols-2 gap-4'>
               <div className='rounded-3xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/40 p-6 sm:p-7 shadow-sm'>
                 <p className='text-sm text-zinc-500 dark:text-zinc-400'>Free</p>
-                <p className='mt-2 text-2xl sm:text-3xl font-light'>0</p>
+                <p className='mt-2 text-2xl sm:text-3xl font-light'>$0</p>
                 <p className='mt-2 text-sm text-zinc-700 dark:text-zinc-300'>Perfect for trying it on your next video.</p>
                 <div className='mt-6 space-y-2 text-sm text-zinc-700 dark:text-zinc-300'>
                   <p>• 2 articles/day</p>
                   <p>• Saved library</p>
                   <p>• Markdown export</p>
                 </div>
-                <Link href='/signup' className='mt-6 inline-flex w-full items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-white font-medium px-6 py-4 sm:px-5 sm:py-3 rounded-xl transition-colors min-h-[44px]'>
-                  Create account
+                <Link
+                  href='/signup'
+                  className='mt-6 inline-flex w-full items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-white font-medium px-6 py-4 sm:px-5 sm:py-3 rounded-xl transition-colors min-h-[44px]'
+                >
+                  Create free account
                 </Link>
               </div>
 
               <div className='rounded-3xl border border-zinc-200/70 dark:border-zinc-800 bg-gradient-to-b from-white/70 to-white/40 dark:from-zinc-950/40 dark:to-zinc-950/20 p-6 sm:p-7 shadow-sm'>
-                <p className='text-sm text-zinc-500 dark:text-zinc-400'>Pro</p>
-                <p className='mt-2 text-2xl sm:text-3xl font-light'>Coming soon</p>
-                <p className='mt-2 text-sm text-zinc-700 dark:text-zinc-300'>Higher limits, teams, and more export options.</p>
-                <div className='mt-6 space-y-2 text-sm text-zinc-700 dark:text-zinc-300'>
-                  <p>• Higher daily limits</p>
-                  <p>• Team workspaces</p>
-                  <p>• Export formats</p>
+                <p className='text-sm text-zinc-500 dark:text-zinc-400'>Paid plans</p>
+                <p className='mt-2 text-2xl sm:text-3xl font-light'>Pro &amp; Premium</p>
+                <p className='mt-2 text-sm text-zinc-700 dark:text-zinc-300'>Higher limits and team-friendly features.</p>
+
+                <div className='mt-6 space-y-4 text-sm text-zinc-700 dark:text-zinc-300'>
+                  <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/40 p-4'>
+                    <p className='text-sm font-medium'>Pro · $8/month</p>
+                    <p className='mt-1 text-xs text-zinc-600 dark:text-zinc-400'>
+                      Built for individual creators with higher article limits.
+                    </p>
+                  </div>
+                  <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/40 p-4'>
+                    <p className='text-sm font-medium'>Premium · $12/month</p>
+                    <p className='mt-1 text-xs text-zinc-600 dark:text-zinc-400'>
+                      For teams and heavy users who need more throughput.
+                    </p>
+                  </div>
                 </div>
-                <Link href='/signup' className='mt-6 inline-flex w-full items-center justify-center bg-white/80 dark:bg-zinc-950/40 border border-zinc-300/70 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium px-6 py-4 sm:px-5 sm:py-3 rounded-xl hover:bg-white dark:hover:bg-zinc-900 transition-colors min-h-[44px]'>
-                  Join waitlist
+
+                <Link
+                  href='/signup'
+                  className='mt-6 inline-flex w-full items-center justify-center bg-white/80 dark:bg-zinc-950/40 border border-zinc-300/70 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium px-6 py-4 sm:px-5 sm:py-3 rounded-xl hover:bg-white dark:hover:bg-zinc-900 transition-colors min-h-[44px]'
+                >
+                  Choose a paid plan
                 </Link>
               </div>
             </div>

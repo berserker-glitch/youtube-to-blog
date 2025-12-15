@@ -46,9 +46,21 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub;
-      }
+      if (!session.user || !token.sub) return session;
+
+      // Always load latest billing state from the database for this user
+      const dbUser = await prisma.user.findUnique({
+        where: { id: token.sub as string },
+        select: {
+          plan: true,
+          subscriptionStatus: true,
+        },
+      });
+
+      session.user.id = token.sub as string;
+      session.user.plan = dbUser?.plan ?? 'free';
+      session.user.subscriptionStatus = dbUser?.subscriptionStatus ?? 'inactive';
+
       return session;
     },
   },

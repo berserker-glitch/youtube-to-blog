@@ -21,6 +21,14 @@ model User {
   sessions Session[]
   articles Article[]
   wordpressIntegrations WordpressIntegration[]
+
+  // Billing / subscriptions (Paddle Billing)
+  plan                Plan                 @default(free)
+  subscriptionStatus  SubscriptionStatus   @default(inactive)
+  paddleCustomerId    String?              @db.VarChar(255)
+  paddleSubscriptionId String?             @db.VarChar(255)
+  paddlePriceId       String?              @db.VarChar(255)
+  currentPeriodEnd    DateTime?
 }
 
 model Account {
@@ -73,6 +81,19 @@ enum ArticleStatus {
   draft
   complete
   failed
+}
+
+enum Plan {
+  free
+  pro
+  premium
+}
+
+enum SubscriptionStatus {
+  inactive
+  active
+  past_due
+  canceled
 }
 
 model Article {
