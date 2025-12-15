@@ -10,20 +10,11 @@ function utcNextDayStart(d = new Date()): Date {
   return new Date(start.getTime() + 24 * 60 * 60 * 1000);
 }
 
-function utcMonthStart(d = new Date()): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
-}
-
-function utcNextMonthStart(d = new Date()): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
-}
-
 function utcWeekStart(d = new Date()): Date {
-  // ISO week start (Monday) in UTC
-  const dayStart = utcDayStart(d);
-  const day = dayStart.getUTCDay(); // 0=Sun..6=Sat
-  const diffToMonday = (day + 6) % 7; // Mon->0, Tue->1, ... Sun->6
-  return new Date(dayStart.getTime() - diffToMonday * 24 * 60 * 60 * 1000);
+  const start = utcDayStart(d);
+  const dayOfWeek = start.getUTCDay();
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  return new Date(start.getTime() - daysToMonday * 24 * 60 * 60 * 1000);
 }
 
 function utcNextWeekStart(d = new Date()): Date {
@@ -31,10 +22,12 @@ function utcNextWeekStart(d = new Date()): Date {
   return new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
 }
 
-function windowLabel(window: LimitWindow): string {
-  if (window === 'daily') return 'day';
-  if (window === 'weekly') return 'week';
-  return 'month';
+function utcMonthStart(d = new Date()): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+}
+
+function utcNextMonthStart(d = new Date()): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
 }
 
 export async function assertGenerationLimit(params: {
@@ -50,18 +43,18 @@ export async function assertGenerationLimit(params: {
   const { limit, window } = getLimitsForPlan(params.plan);
   const now = new Date();
 
-  const windowStart =
-    window === 'daily'
-      ? utcDayStart(now)
-      : window === 'weekly'
-        ? utcWeekStart(now)
-        : utcMonthStart(now);
-  const resetAt =
-    window === 'daily'
-      ? utcNextDayStart(now)
-      : window === 'weekly'
-        ? utcNextWeekStart(now)
-        : utcNextMonthStart(now);
+  let windowStart: Date;
+  let resetAt: Date;
+  if (window === 'daily') {
+    windowStart = utcDayStart(now);
+    resetAt = utcNextDayStart(now);
+  } else if (window === 'weekly') {
+    windowStart = utcWeekStart(now);
+    resetAt = utcNextWeekStart(now);
+  } else {
+    windowStart = utcMonthStart(now);
+    resetAt = utcNextMonthStart(now);
+  }
 
   const used = await prisma.article.count({
     where: {
@@ -71,7 +64,7 @@ export async function assertGenerationLimit(params: {
   });
 
   if (used >= limit) {
-    const label = windowLabel(window);
+    const label = window === 'daily' ? 'day' : window === 'weekly' ? 'week' : 'month';
     throw new Error(
       `Generation limit reached (${limit}/${label}). Your limit resets at ${resetAt.toISOString()}.`
     );
@@ -84,7 +77,7 @@ export async function assertGenerationLimit(params: {
     window,
     resetAt,
   };
-  }
+}
 
 export async function getGenerationUsage(params: {
   userId: string;
@@ -100,18 +93,18 @@ export async function getGenerationUsage(params: {
   const { limit, window } = getLimitsForPlan(params.plan);
   const now = new Date();
 
-  const windowStart =
-    window === 'daily'
-      ? utcDayStart(now)
-      : window === 'weekly'
-        ? utcWeekStart(now)
-        : utcMonthStart(now);
-  const resetAt =
-    window === 'daily'
-      ? utcNextDayStart(now)
-      : window === 'weekly'
-        ? utcNextWeekStart(now)
-        : utcNextMonthStart(now);
+  let windowStart: Date;
+  let resetAt: Date;
+  if (window === 'daily') {
+    windowStart = utcDayStart(now);
+    resetAt = utcNextDayStart(now);
+  } else if (window === 'weekly') {
+    windowStart = utcWeekStart(now);
+    resetAt = utcNextWeekStart(now);
+  } else {
+    windowStart = utcMonthStart(now);
+    resetAt = utcNextMonthStart(now);
+  }
 
   const used = await prisma.article.count({
     where: {

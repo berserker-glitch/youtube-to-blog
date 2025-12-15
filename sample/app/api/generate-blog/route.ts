@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         window: limitState.window,
         remaining: limitState.remaining,
         resetAt: limitState.resetAt.toISOString(),
-    });
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Rate limit exceeded';
       return NextResponse.json(
