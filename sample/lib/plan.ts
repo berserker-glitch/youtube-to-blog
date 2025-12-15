@@ -6,7 +6,7 @@ export interface PlanModelRouting {
   feedbackModel: string;
 }
 
-export type LimitWindow = 'daily' | 'monthly';
+export type LimitWindow = 'daily' | 'weekly' | 'monthly';
 
 export interface PlanLimit {
   limit: number;
@@ -34,6 +34,6 @@ export function getModelsForPlan(plan: UserPlan): PlanModelRouting {
 
 export function getLimitsForPlan(plan: UserPlan): PlanLimit {
   if (plan === 'free') return { limit: 4, window: 'monthly' };
-  if (plan === 'pro') return { limit: 2, window: 'daily' };
-  return { limit: 5, window: 'daily' };
+  if (plan === 'pro') return { limit: 4, window: 'weekly' };
+  return { limit: 1, window: 'daily' };
 }

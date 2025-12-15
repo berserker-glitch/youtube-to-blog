@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { ThemeToggle } from '@/app/_components/ThemeToggle';
 import { UserMenu } from './_components/UserMenu';
 import { getAppServerSession } from '@/lib/auth-helpers';
+import { GenerationProvider } from './_components/GenerationProvider';
+import { GenerationBanner } from './_components/GenerationBanner';
 
 export default async function AppLayout({
   children,
@@ -13,7 +15,8 @@ export default async function AppLayout({
   const isSuperAdmin = role === 'super_admin';
 
   return (
-    <div className='h-[100dvh] overflow-hidden bg-[#fbfbfc] dark:bg-[#06070a] text-zinc-900 dark:text-zinc-50'>
+    <GenerationProvider>
+      <div className='h-[100dvh] overflow-hidden bg-[#fbfbfc] dark:bg-[#06070a] text-zinc-900 dark:text-zinc-50'>
       {/* Background */}
       <div className='pointer-events-none fixed inset-0 overflow-hidden'>
         <div className='absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full bg-gradient-to-br from-indigo-200/50 via-sky-200/30 to-transparent blur-3xl dark:from-indigo-500/15 dark:via-sky-500/10' />
@@ -104,12 +107,16 @@ export default async function AppLayout({
             </header>
 
             <main className='bg-white/70 dark:bg-zinc-950/40 backdrop-blur rounded-2xl border border-zinc-200/70 dark:border-zinc-800 p-6 shadow-sm flex-1 min-h-0 overflow-auto'>
+              <div className='mb-4'>
+                <GenerationBanner />
+              </div>
               {children}
             </main>
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </GenerationProvider>
   );
 }
 

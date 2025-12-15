@@ -20,8 +20,8 @@ const features = [
     desc: 'Everything you generate is saved to your dashboard so you can revisit, copy, and download anytime.',
   },
   {
-    title: 'Fewer rewrites',
-    desc: 'Start from a clean, structured draft so you spend time polishing—not rebuilding from scratch.',
+    title: 'Feedback + rewrite pass',
+    desc: 'Every article goes through a critique pass, then gets rewritten into a cleaner final version.',
   },
   {
     title: 'Publish-ready depth',
@@ -29,7 +29,7 @@ const features = [
   },
   {
     title: 'Grounded in the video',
-    desc: 'The draft is based on the source transcript—cleaned up, clarified, and formatted for reading.',
+    desc: 'Built from captions/transcript. We automatically fall back to English auto-captions when available.',
   },
 ];
 
@@ -301,8 +301,8 @@ export default function HomePage() {
             <div className='mt-8 grid grid-cols-1 md:grid-cols-3 gap-4'>
               {[
                 { step: '01', title: 'Paste a YouTube link', desc: 'We pull the transcript (captions) and prepare the source content.' },
-                { step: '02', title: 'We structure the draft', desc: 'The content is organized into sections with clear headings and flow.' },
-                { step: '03', title: 'Download or keep it saved', desc: 'Export Markdown or access the article anytime from your library.' },
+                { step: '02', title: 'Draft → feedback → rewrite', desc: 'A writer creates a draft, a feedback model critiques it, then the writer produces the final article you see.' },
+                { step: '03', title: 'Saved + exportable', desc: 'Your final article is saved to your library and exportable as clean Markdown.' },
               ].map((s) => (
                 <Reveal key={s.step} delayMs={Number(s.step) * 30}>
                   <Card>
@@ -342,11 +342,12 @@ export default function HomePage() {
               <Card>
                 <p className='text-base sm:text-lg font-medium'>What you can expect</p>
                 <div className='mt-4 space-y-2 text-sm text-zinc-700 dark:text-zinc-300'>
-                  <p>• A structured, long-form draft</p>
+                  <p>• A structured, long-form final article</p>
                   <p>• Clean headings and readable formatting</p>
+                  <p>• Feedback-driven rewrite for quality</p>
                   <p>• Export as Markdown</p>
                   <p>• Saved history in your dashboard</p>
-                  <p>• Fair-use daily cap (2/day in v1)</p>
+                  <p>• Plan-based limits (Free 4/month · Pro 4/week · Premium 1/day)</p>
                 </div>
                 <Link
                   href='/signup'
@@ -373,7 +374,9 @@ export default function HomePage() {
                 <p className='mt-2 text-2xl sm:text-3xl font-light'>$0</p>
                 <p className='mt-2 text-sm text-zinc-700 dark:text-zinc-300'>Perfect for trying it on your next video.</p>
                 <div className='mt-6 space-y-2 text-sm text-zinc-700 dark:text-zinc-300'>
-                  <p>• 100 articles/day</p>
+                  <p>• 4 articles/month</p>
+                  <p>• Writer + feedback: Kimi K2</p>
+                  <p>• Chapters: Gemini 2.0</p>
                   <p>• Saved library</p>
                   <p>• Markdown export</p>
                 </div>
@@ -388,19 +391,19 @@ export default function HomePage() {
               <div className='rounded-3xl border border-zinc-200/70 dark:border-zinc-800 bg-gradient-to-b from-white/70 to-white/40 dark:from-zinc-950/40 dark:to-zinc-950/20 p-6 sm:p-7 shadow-sm'>
                 <p className='text-sm text-zinc-500 dark:text-zinc-400'>Paid plans</p>
                 <p className='mt-2 text-2xl sm:text-3xl font-light'>Pro &amp; Premium</p>
-                <p className='mt-2 text-sm text-zinc-700 dark:text-zinc-300'>Higher limits and team-friendly features.</p>
+                <p className='mt-2 text-sm text-zinc-700 dark:text-zinc-300'>Higher limits and stronger models.</p>
 
                 <div className='mt-6 space-y-4 text-sm text-zinc-700 dark:text-zinc-300'>
                   <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/40 p-4'>
                     <p className='text-sm font-medium'>Pro · $8/month</p>
                     <p className='mt-1 text-xs text-zinc-600 dark:text-zinc-400'>
-                      Built for individual creators with higher article limits.
+                      4 articles/week · Writer: GPT-5.2 · Feedback: Kimi K2 · Chapters: Gemini 2.0
                     </p>
                   </div>
                   <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/40 p-4'>
                     <p className='text-sm font-medium'>Premium · $12/month</p>
                     <p className='mt-1 text-xs text-zinc-600 dark:text-zinc-400'>
-                      For teams and heavy users who need more throughput.
+                      1 article/day · Writer: GPT-5.2 · Feedback: Kimi K2 · Chapters: Gemini 2.0
                     </p>
                   </div>
                 </div>

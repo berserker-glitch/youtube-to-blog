@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MarkdownViewer } from '@/app/_components/MarkdownViewer';
 import { parseYouTubeUrl } from '@/lib/youtube';
+import { useGeneration } from '../_components/GenerationProvider';
 
 export default function GeneratePage() {
   const [videoUrl, setVideoUrl] = useState('');
@@ -20,7 +21,7 @@ export default function GeneratePage() {
   const [markdown, setMarkdown] = useState<string>('');
   const [filename, setFilename] = useState<string>('articlealchemist.md');
   const [copied, setCopied] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
+  const { state: genState, start: startGeneration, clearResult } = useGeneration();
 
   const isValidUrl = useMemo(() => {
     const v = videoUrl.trim();
@@ -38,9 +39,7 @@ export default function GeneratePage() {
     [videoUrl, isGenerating, isValidUrl]
   );
 
-  useEffect(() => {
-    return () => abortRef.current?.abort();
-  }, []);
+  // Note: generation continues across navigation (handled by GenerationProvider).
 
   const steps = useMemo(
     () => [
@@ -107,70 +106,41 @@ export default function GeneratePage() {
   };
 
   const handleGenerate = async () => {
-    const runId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    console.groupCollapsed(`[generate] start ${runId}`);
-    console.log('videoUrl', videoUrl);
-    console.log('isValidUrl', isValidUrl);
-    console.log('canGenerate', canGenerate);
-
     setError(null);
     setMarkdown('');
     setCopied(false);
     setPhase('fetching');
     setIsGenerating(true);
 
-    abortRef.current?.abort();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-
     const t1 = window.setTimeout(() => setPhase('chaptering'), 1200);
     const t2 = window.setTimeout(() => setPhase('writing'), 3500);
     const t3 = window.setTimeout(() => setPhase('assembling'), 7000);
 
-    try {
-      console.log('POST /api/generate-blog payload', { youtubeUrl: videoUrl, lang: 'en' });
-      const resp = await fetch('/api/generate-blog', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ youtubeUrl: videoUrl, lang: 'en' }),
-        signal: ctrl.signal,
-      });
+    // Start generation at the app level so it continues even if user navigates.
+    startGeneration({ videoUrl });
 
-      console.log('response status', resp.status, resp.statusText);
-      console.log('response headers', {
-        'content-type': resp.headers.get('content-type'),
-        'content-disposition': resp.headers.get('content-disposition'),
-      });
-
-      if (!resp.ok) {
-        const json = await resp.json().catch(() => null);
-        console.log('error json', json);
-        throw new Error(json?.error || `Request failed (${resp.status})`);
-      }
-
-      const md = await resp.text();
-      console.log('markdown bytes', md.length);
-      const disposition = resp.headers.get('content-disposition') || '';
-      const match = disposition.match(/filename="([^"]+)"/i);
-      const name = match?.[1] || 'articlealchemist.md';
-      console.log('filename', name);
-
-      setFilename(name);
-      setMarkdown(md);
-      setPhase('done');
-    } catch (e) {
-      if ((e as any)?.name === 'AbortError') return;
-      console.error('generation failed', e);
-      setError(e instanceof Error ? e.message : 'Unknown error');
-      setPhase('error');
-    } finally {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-      window.clearTimeout(t3);
-      setIsGenerating(false);
-      console.groupEnd();
-    }
+    window.clearTimeout(t1);
+    window.clearTimeout(t2);
+    window.clearTimeout(t3);
+    setIsGenerating(false);
   };
+
+  // Mirror global generation results back into this page UI
+  useEffect(() => {
+    if (genState.phase === 'done' && genState.markdown && genState.filename) {
+      setMarkdown(genState.markdown);
+      setFilename(genState.filename);
+      setPhase('done');
+      setError(null);
+    }
+    if (genState.phase === 'error' && genState.error) {
+      setError(genState.error);
+      setPhase('error');
+    }
+    if (genState.inProgress) {
+      setPhase(genState.phase);
+    }
+  }, [genState]);
 
   return (
     <div>
@@ -298,19 +268,7 @@ export default function GeneratePage() {
               disabled={!canGenerate}
               className='flex-1 bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-400 text-white font-medium py-3 px-6 rounded-xl transition-colors disabled:cursor-not-allowed'
             >
-              {isGenerating ? 'Generating…' : 'Generate (.md)'}
-            </button>
-
-            <button
-              onClick={() => {
-                abortRef.current?.abort();
-                setIsGenerating(false);
-                setPhase('idle');
-              }}
-              disabled={!isGenerating}
-              className='px-4 py-3 rounded-xl border border-zinc-300/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/40 text-zinc-900 dark:text-zinc-100 disabled:opacity-50 hover:bg-white dark:hover:bg-zinc-900 transition-colors'
-            >
-              Cancel
+              {genState.inProgress ? 'Generating…' : 'Generate (.md)'}
             </button>
           </div>
 
@@ -336,6 +294,20 @@ export default function GeneratePage() {
                   {copied ? 'Copied' : 'Copy Markdown'}
                 </button>
               </div>
+
+              <button
+                type='button'
+                onClick={() => {
+                  clearResult();
+                  setMarkdown('');
+                  setFilename('articlealchemist.md');
+                  setPhase('idle');
+                  setError(null);
+                }}
+                className='w-full rounded-xl border border-zinc-300/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/40 text-zinc-900 dark:text-zinc-100 font-medium py-3 px-6 hover:bg-white dark:hover:bg-zinc-900 transition-colors'
+              >
+                Clear result
+              </button>
             </div>
           )}
         </div>
@@ -347,7 +319,7 @@ export default function GeneratePage() {
               Switch between a rendered preview and the raw Markdown.
             </p>
           </div>
-          <MarkdownViewer markdown={markdown} />
+        <MarkdownViewer markdown={markdown} />
         </div>
       </div>
     </div>

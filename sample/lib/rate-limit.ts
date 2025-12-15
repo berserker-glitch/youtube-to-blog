@@ -18,6 +18,25 @@ function utcNextMonthStart(d = new Date()): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
 }
 
+function utcWeekStart(d = new Date()): Date {
+  // ISO week start (Monday) in UTC
+  const dayStart = utcDayStart(d);
+  const day = dayStart.getUTCDay(); // 0=Sun..6=Sat
+  const diffToMonday = (day + 6) % 7; // Mon->0, Tue->1, ... Sun->6
+  return new Date(dayStart.getTime() - diffToMonday * 24 * 60 * 60 * 1000);
+}
+
+function utcNextWeekStart(d = new Date()): Date {
+  const start = utcWeekStart(d);
+  return new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+}
+
+function windowLabel(window: LimitWindow): string {
+  if (window === 'daily') return 'day';
+  if (window === 'weekly') return 'week';
+  return 'month';
+}
+
 export async function assertGenerationLimit(params: {
   userId: string;
   plan: UserPlan;
@@ -31,8 +50,18 @@ export async function assertGenerationLimit(params: {
   const { limit, window } = getLimitsForPlan(params.plan);
   const now = new Date();
 
-  const windowStart = window === 'daily' ? utcDayStart(now) : utcMonthStart(now);
-  const resetAt = window === 'daily' ? utcNextDayStart(now) : utcNextMonthStart(now);
+  const windowStart =
+    window === 'daily'
+      ? utcDayStart(now)
+      : window === 'weekly'
+        ? utcWeekStart(now)
+        : utcMonthStart(now);
+  const resetAt =
+    window === 'daily'
+      ? utcNextDayStart(now)
+      : window === 'weekly'
+        ? utcNextWeekStart(now)
+        : utcNextMonthStart(now);
 
   const used = await prisma.article.count({
     where: {
@@ -42,7 +71,7 @@ export async function assertGenerationLimit(params: {
   });
 
   if (used >= limit) {
-    const label = window === 'daily' ? 'day' : 'month';
+    const label = windowLabel(window);
     throw new Error(
       `Generation limit reached (${limit}/${label}). Your limit resets at ${resetAt.toISOString()}.`
     );
@@ -71,8 +100,18 @@ export async function getGenerationUsage(params: {
   const { limit, window } = getLimitsForPlan(params.plan);
   const now = new Date();
 
-  const windowStart = window === 'daily' ? utcDayStart(now) : utcMonthStart(now);
-  const resetAt = window === 'daily' ? utcNextDayStart(now) : utcNextMonthStart(now);
+  const windowStart =
+    window === 'daily'
+      ? utcDayStart(now)
+      : window === 'weekly'
+        ? utcWeekStart(now)
+        : utcMonthStart(now);
+  const resetAt =
+    window === 'daily'
+      ? utcNextDayStart(now)
+      : window === 'weekly'
+        ? utcNextWeekStart(now)
+        : utcNextMonthStart(now);
 
   const used = await prisma.article.count({
     where: {
@@ -95,7 +134,7 @@ export function formatPlanLimitLabel(params: {
   limit: number;
   window: LimitWindow;
 }): string {
-  return params.window === 'daily'
-    ? `${params.limit}/day`
-    : `${params.limit}/month`;
+  if (params.window === 'daily') return `${params.limit}/day`;
+  if (params.window === 'weekly') return `${params.limit}/week`;
+  return `${params.limit}/month`;
 }
