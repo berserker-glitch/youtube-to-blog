@@ -81,28 +81,124 @@ export async function callOpenRouterChatDetailed(
   if (cfg.referer) headers['HTTP-Referer'] = cfg.referer;
   if (cfg.title) headers['X-Title'] = cfg.title;
 
-  const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(params),
-  });
+  const requestBody = {
+    model: params.model,
+    messages: params.messages,
+    temperature: params.temperature,
+    max_tokens: params.max_tokens,
+    response_format: params.response_format,
+  };
 
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    const base = `OpenRouter API Error: ${resp.status} ${text}`.trim();
-    if (resp.status === 401) {
-      throw new Error(
-        `${base}\n\nAuth hint: this usually means your OPENROUTER_API_KEY is invalid OR your Next dev server is running with an old/overridden env var. Verify the key in \`sample/.env\` and fully restart \`npm run dev\`.`
-      );
+  // Retry logic for transient failures
+  const maxRetries = 3;
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 1) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 2), 5000);
+        console.log(`[openrouter] Retry attempt ${attempt}/${maxRetries} after ${delay}ms`, {
+          model: params.model,
+        });
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        const base = `OpenRouter API Error: ${resp.status} ${text}`.trim();
+        
+        // Retry on 5xx errors and rate limits
+        if ((resp.status >= 500 && resp.status < 600) || resp.status === 429) {
+          if (attempt < maxRetries) {
+            lastError = new Error(`${base} (attempt ${attempt}/${maxRetries})`);
+            continue;
+          }
+        }
+        
+        if (resp.status === 401) {
+          throw new Error(
+            `${base}\n\nAuth hint: this usually means your OPENROUTER_API_KEY is invalid OR your Next dev server is running with an old/overridden env var. Verify the key in \`sample/.env\` and fully restart \`npm run dev\`.`
+          );
+        }
+        throw new Error(base);
+      }
+
+      const data = (await resp.json()) as OpenRouterChatResponse;
+      
+      // Log full response for debugging if content is missing
+      if (!data.choices || data.choices.length === 0) {
+        console.error('[openrouter] No choices in response', {
+          status: resp.status,
+          response: JSON.stringify(data, null, 2),
+          model: params.model,
+          attempt,
+        });
+        throw new Error(`OpenRouter returned no choices. Response: ${JSON.stringify(data)}`);
+      }
+
+      const choice = data.choices[0];
+      const content = choice?.message?.content;
+      
+      // Check for empty or null content
+      if (!content || (typeof content === 'string' && content.trim().length === 0)) {
+        console.error('[openrouter] Empty content in response', {
+          status: resp.status,
+          model: params.model,
+          choice: JSON.stringify(choice, null, 2),
+          fullResponse: JSON.stringify(data, null, 2),
+          usage: data.usage,
+          attempt,
+          messageKeys: choice?.message ? Object.keys(choice.message) : [],
+        });
+        
+        // Retry on empty content (might be a transient issue)
+        if (attempt < maxRetries) {
+          lastError = new Error(
+            `OpenRouter returned empty content (attempt ${attempt}/${maxRetries}). Model: ${params.model}`
+          );
+          continue;
+        }
+        
+        throw new Error(
+          `OpenRouter returned empty content after ${maxRetries} attempts. Model: ${params.model}, Choice: ${JSON.stringify(choice)}`
+        );
+      }
+
+      // Log successful response for debugging (only on first attempt to avoid spam)
+      if (attempt === 1) {
+        console.log('[openrouter] Success', {
+          model: params.model,
+          contentLength: content.length,
+          usage: data.usage,
+        });
+      }
+
+      return { content, usage: normalizeUsage(data.usage) };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      // Don't retry on non-retryable errors
+      if (
+        lastError.message.includes('401') ||
+        lastError.message.includes('400') ||
+        (lastError.message.includes('403') && attempt === 1)
+      ) {
+        throw lastError;
+      }
+      
+      if (attempt === maxRetries) {
+        throw lastError;
+      }
     }
-    throw new Error(base);
   }
 
-  const data = (await resp.json()) as OpenRouterChatResponse;
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('OpenRouter returned an empty response');
-
-  return { content, usage: normalizeUsage(data.usage) };
+  throw lastError || new Error('OpenRouter request failed after retries');
 }
 
 export async function callOpenRouterChat(
