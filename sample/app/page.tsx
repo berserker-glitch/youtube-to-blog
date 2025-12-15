@@ -431,6 +431,9 @@ export default function HomePage() {
                 <Link href='/app' className='text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'>
                   App
                 </Link>
+                <Link href='/terms' className='text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'>
+                  Terms
+                </Link>
               </div>
             </div>
           </footer>
