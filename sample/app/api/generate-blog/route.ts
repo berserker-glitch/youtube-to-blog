@@ -11,10 +11,20 @@ import {
 } from '@/lib/transcript';
 import { generateChapters } from '@/lib/chaptering';
 import { assembleMarkdown, slugify } from '@/lib/markdown';
-import { writeConclusion, writeIntroduction, writeSection } from '@/lib/writer';
+import {
+  getDraftFeedback,
+  reviseConclusionWithFeedback,
+  reviseIntroductionWithFeedback,
+  reviseSectionWithFeedback,
+  writeConclusion,
+  writeIntroduction,
+  writeSection,
+} from '@/lib/writer';
 import { getAppServerSession } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
-import { assertDailyLimit } from '@/lib/rate-limit';
+import { assertGenerationLimit, formatPlanLimitLabel } from '@/lib/rate-limit';
+import type { UserPlan } from '@/lib/plan';
+import { getModelRoutingForPlan } from '@/lib/model-routing';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,14 +37,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { remaining: remainingGenerations, limit } = assertDailyLimit({
-      userId,
-      limit: 100,
-    });
-    console.log('[generate-blog] daily limit ok', {
-      remainingGenerations,
-      limit,
-    });
+    const plan = ((session?.user as any)?.plan ?? 'free') as UserPlan;
+    let limitState: Awaited<ReturnType<typeof assertGenerationLimit>> | null =
+      null;
+    try {
+      limitState = await assertGenerationLimit({ userId, plan });
+      console.log('[generate-blog] generation limit ok', {
+        plan,
+        used: limitState.used,
+        limit: limitState.limit,
+        window: limitState.window,
+        remaining: limitState.remaining,
+        resetAt: limitState.resetAt.toISOString(),
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Rate limit exceeded';
+      return NextResponse.json(
+        {
+          error: msg,
+          plan,
+        },
+        { status: 429 }
+      );
+    }
+
+    const models = await getModelRoutingForPlan(plan);
 
     const body = await request.json();
     const youtubeUrl = (body?.youtubeUrl || '').toString();
@@ -85,13 +112,13 @@ export async function POST(request: NextRequest) {
     console.log('[generate-blog] chunked', { chunks: chunks.length });
 
     console.log('[generate-blog] generating semantic chapters', {
-      model: process.env.OPENROUTER_MODEL_CHAPTERS || 'google/gemini-2.0-flash',
+      model: models.chaptersModel,
     });
     const chapters = await generateChapters({
       transcriptWithTimestamps: transcriptForChaptering,
       videoTitle: videoDetails?.title,
       totalDurationSec,
-      model: process.env.OPENROUTER_MODEL_CHAPTERS || 'google/gemini-2.0-flash',
+      model: models.chaptersModel,
     });
     console.log('[generate-blog] chapters ready', {
       count: chapters.length,
@@ -121,18 +148,21 @@ export async function POST(request: NextRequest) {
     });
 
     console.log('[generate-blog] writing introduction', {
-      model: process.env.OPENROUTER_MODEL_WRITER || 'google/gemini-2.5-flash',
+      model: models.writerModel,
     });
-    const intro = await writeIntroduction({
+    const initialIntro = await writeIntroduction({
       articleTitle,
       chapters,
-      video: { title: videoDetails?.title, description: videoDetails?.description },
+      video: {
+        title: videoDetails?.title,
+        description: videoDetails?.description,
+      },
       overallTargetWords,
       targetWords: introTargetWords,
-      model: process.env.OPENROUTER_MODEL_WRITER || 'google/gemini-2.5-flash',
+      model: models.writerModel,
     });
 
-    const sections: string[] = [];
+    const initialSections: string[] = [];
     for (const chapter of chapters) {
       console.log('[generate-blog] writing section', {
         id: chapter.id,
@@ -150,32 +180,118 @@ export async function POST(request: NextRequest) {
       const section = await writeSection({
         chapter,
         transcriptSlice: sliceText,
-        video: { title: videoDetails?.title, description: videoDetails?.description },
+        video: {
+          title: videoDetails?.title,
+          description: videoDetails?.description,
+        },
         overallTargetWords,
         targetWords: perSectionTargetWords,
-        model: process.env.OPENROUTER_MODEL_WRITER || 'google/gemini-2.5-flash',
+        model: models.writerModel,
       });
-      sections.push(section);
+      initialSections.push(section);
     }
 
     console.log('[generate-blog] writing conclusion');
-    const conclusion = await writeConclusion({
+    const initialConclusion = await writeConclusion({
+      articleTitle,
+      chapters,
+      video: {
+        title: videoDetails?.title,
+        description: videoDetails?.description,
+      },
+      overallTargetWords,
+      targetWords: conclusionTargetWords,
+      model: models.writerModel,
+    });
+
+    console.log('[generate-blog] assembling initial markdown');
+    const initialMd = assembleMarkdown({
+      articleTitle,
+      intro: initialIntro,
+      chapters,
+      sections: initialSections,
+      conclusion: initialConclusion,
+      video: {
+        title: videoDetails?.title,
+        description: videoDetails?.description,
+        url: youtubeUrl,
+      },
+    });
+
+    console.log('[generate-blog] generating feedback', {
+      model: models.feedbackModel,
+    });
+    const feedback = await getDraftFeedback({
+      articleTitle,
+      video: { title: videoDetails?.title, description: videoDetails?.description },
+      draftMarkdown: initialMd,
+      model: models.feedbackModel,
+    });
+
+    console.log('[generate-blog] revising introduction');
+    const intro = await reviseIntroductionWithFeedback({
+      articleTitle,
+      chapters,
+      video: { title: videoDetails?.title, description: videoDetails?.description },
+      overallTargetWords,
+      targetWords: introTargetWords,
+      originalIntro: initialIntro,
+      feedbackMarkdown: feedback,
+      model: models.writerModel,
+    });
+
+    const sections: string[] = [];
+    for (let i = 0; i < chapters.length; i++) {
+      const chapter = chapters[i];
+      console.log('[generate-blog] revising section', {
+        id: chapter.id,
+        title: chapter.title,
+      });
+
+      const slice = extractTranscriptSlice(
+        segments,
+        chapter.startSec,
+        chapter.endSec
+      );
+      const sliceText = formatSegmentsForLLM(slice);
+
+      const revised = await reviseSectionWithFeedback({
+        chapter,
+        transcriptSlice: sliceText,
+        video: { title: videoDetails?.title, description: videoDetails?.description },
+        overallTargetWords,
+        targetWords: perSectionTargetWords,
+        originalSection: initialSections[i] || '',
+        feedbackMarkdown: feedback,
+        model: models.writerModel,
+      });
+      sections.push(revised);
+    }
+
+    console.log('[generate-blog] revising conclusion');
+    const conclusion = await reviseConclusionWithFeedback({
       articleTitle,
       chapters,
       video: { title: videoDetails?.title, description: videoDetails?.description },
       overallTargetWords,
       targetWords: conclusionTargetWords,
-      model: process.env.OPENROUTER_MODEL_WRITER || 'google/gemini-2.5-flash',
+      originalConclusion: initialConclusion,
+      feedbackMarkdown: feedback,
+      model: models.writerModel,
     });
 
-    console.log('[generate-blog] assembling markdown');
+    console.log('[generate-blog] assembling final markdown');
     const md = assembleMarkdown({
       articleTitle,
       intro,
       chapters,
       sections,
       conclusion,
-      video: { title: videoDetails?.title, description: videoDetails?.description, url: youtubeUrl },
+      video: {
+        title: videoDetails?.title,
+        description: videoDetails?.description,
+        url: youtubeUrl,
+      },
     });
 
     const filename = `${slugify(articleTitle)}.md`;
@@ -199,11 +315,24 @@ export async function POST(request: NextRequest) {
             primaryKeyword: c.primaryKeyword,
           })),
           models: {
-            chapters:
-              process.env.OPENROUTER_MODEL_CHAPTERS || 'google/gemini-2.0-flash',
-            writer:
-              process.env.OPENROUTER_MODEL_WRITER || 'google/gemini-2.5-flash',
+            chapters: models.chaptersModel,
+            writer: models.writerModel,
+            feedback: models.feedbackModel,
+            revisionWriter: models.writerModel,
+            plan,
           },
+          generationLimit: limitState
+            ? {
+                plan,
+                limit: limitState.limit,
+                window: limitState.window,
+                label: formatPlanLimitLabel({
+                  limit: limitState.limit,
+                  window: limitState.window,
+                }),
+                resetAt: limitState.resetAt.toISOString(),
+              }
+            : { plan },
           wordBudget: {
             overallTargetWords,
             introTargetWords,

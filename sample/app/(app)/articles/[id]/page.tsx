@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { getAppServerSession } from '@/lib/auth-helpers';
 import { ArticleClientActions } from './_components/ArticleClientActions';
+import { MarkdownContent } from '@/app/_components/MarkdownContent';
 
 export default async function ArticleDetailPage({
   params,
@@ -45,13 +46,18 @@ export default async function ArticleDetailPage({
         <ArticleClientActions markdown={article.markdown} filename={filename} />
       </div>
 
-      <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-4 sm:p-5'>
-        <textarea
-          readOnly
-          value={article.markdown}
-          className='w-full h-[400px] sm:h-[500px] lg:h-[640px] resize-none rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950/40 text-zinc-900 dark:text-zinc-100 p-4 font-mono text-sm leading-relaxed'
-        />
+      <div className='rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-5 sm:p-7'>
+        <MarkdownContent markdown={article.markdown} />
       </div>
+
+      <details className='mt-5 rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/30 p-4 sm:p-5'>
+        <summary className='cursor-pointer select-none text-sm font-medium text-zinc-900 dark:text-zinc-100'>
+          View raw Markdown
+        </summary>
+        <pre className='mt-4 rounded-xl border border-zinc-300/70 dark:border-zinc-800 bg-white dark:bg-zinc-950/40 text-zinc-900 dark:text-zinc-100 p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap break-words'>
+          {article.markdown}
+        </pre>
+      </details>
     </div>
   );
 }

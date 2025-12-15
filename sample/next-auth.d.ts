@@ -9,6 +9,7 @@ declare module 'next-auth' {
       image?: string | null;
       plan?: 'free' | 'pro' | 'premium';
       subscriptionStatus?: 'inactive' | 'active' | 'past_due' | 'canceled';
+      role?: 'user' | 'super_admin';
     };
   }
 }

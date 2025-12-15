@@ -54,12 +54,14 @@ export const authOptions: NextAuthOptions = {
         select: {
           plan: true,
           subscriptionStatus: true,
+          role: true,
         },
       });
 
       session.user.id = token.sub as string;
       session.user.plan = dbUser?.plan ?? 'free';
       session.user.subscriptionStatus = dbUser?.subscriptionStatus ?? 'inactive';
+      session.user.role = (dbUser?.role as any) ?? 'user';
 
       return session;
     },

@@ -346,7 +346,7 @@ export default function HomePage() {
                   <p>• Clean headings and readable formatting</p>
                   <p>• Export as Markdown</p>
                   <p>• Saved history in your dashboard</p>
-                  <p>• Generous daily limit (100/day)</p>
+                  <p>• Fair-use daily cap (2/day in v1)</p>
                 </div>
                 <Link
                   href='/signup'

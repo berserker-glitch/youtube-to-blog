@@ -1,8 +1,17 @@
 import Link from 'next/link';
 import { ThemeToggle } from '@/app/_components/ThemeToggle';
 import { UserMenu } from './_components/UserMenu';
+import { getAppServerSession } from '@/lib/auth-helpers';
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await getAppServerSession();
+  const role = (session?.user as any)?.role as string | undefined;
+  const isSuperAdmin = role === 'super_admin';
+
   return (
     <div className='h-[100dvh] overflow-hidden bg-[#fbfbfc] dark:bg-[#06070a] text-zinc-900 dark:text-zinc-50'>
       {/* Background */}
@@ -28,30 +37,49 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </Link>
 
             <nav className='space-y-1'>
-              <Link
-                href='/app/generate'
-                className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
-              >
-                Generate
-              </Link>
-              <Link
-                href='/app/articles'
-                className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
-              >
-                Articles
-              </Link>
-              <Link
-                href='/app/integrations/wordpress'
-                className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
-              >
-                WordPress
-              </Link>
-              <Link
-                href='/app/settings'
-                className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
-              >
-                Settings
-              </Link>
+              {isSuperAdmin ? (
+                <>
+                  <Link
+                    href='/app/admin'
+                    className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
+                  >
+                    Super Admin
+                  </Link>
+                  <Link
+                    href='/app/settings'
+                    className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
+                  >
+                    Settings
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href='/app/generate'
+                    className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
+                  >
+                    Generate
+                  </Link>
+                  <Link
+                    href='/app/articles'
+                    className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
+                  >
+                    Articles
+                  </Link>
+                  <Link
+                    href='/app/integrations/wordpress'
+                    className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
+                  >
+                    WordPress
+                  </Link>
+                  <Link
+                    href='/app/settings'
+                    className='block rounded-xl px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/60 transition-colors'
+                  >
+                    Settings
+                  </Link>
+                </>
+              )}
             </nav>
 
             <div className='mt-6'>

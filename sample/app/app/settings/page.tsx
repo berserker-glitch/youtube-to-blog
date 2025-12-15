@@ -1,12 +1,20 @@
 import { getAppServerSession } from '@/lib/auth-helpers';
+import { getGenerationUsage } from '@/lib/rate-limit';
+import type { UserPlan } from '@/lib/plan';
 
 export default async function SettingsPage() {
   const session = await getAppServerSession();
+  const userId = session?.user?.id;
   const plan = session?.user?.plan ?? 'free';
   const subscriptionStatus = session?.user?.subscriptionStatus ?? 'inactive';
 
   const planLabel =
     plan === 'pro' ? 'Pro' : plan === 'premium' ? 'Premium' : 'Free';
+
+  const usage =
+    userId && (plan === 'free' || plan === 'pro' || plan === 'premium')
+      ? await getGenerationUsage({ userId, plan: plan as UserPlan })
+      : null;
 
   return (
     <div>
@@ -39,6 +47,18 @@ export default async function SettingsPage() {
                   </span>
                 )}
               </p>
+            </div>
+
+            <div className='rounded-xl border border-zinc-200/70 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/40 p-4'>
+              <p className='text-xs text-zinc-500 dark:text-zinc-400'>Usage limit</p>
+              <p className='mt-1 text-base font-medium'>
+                {usage ? usage.label : plan === 'free' ? '4/month' : plan === 'pro' ? '2/day' : '5/day'}
+              </p>
+              {usage ? (
+                <p className='mt-1 text-xs text-zinc-500 dark:text-zinc-400'>
+                  Used {usage.used}/{usage.limit} • Resets {usage.resetAt.toLocaleString()}
+                </p>
+              ) : null}
             </div>
 
             <form

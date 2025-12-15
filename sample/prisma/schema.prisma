@@ -17,6 +17,8 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  role          UserRole  @default(user)
+
   accounts Account[]
   sessions Session[]
   articles Article[]
@@ -89,11 +91,26 @@ enum Plan {
   premium
 }
 
+enum UserRole {
+  user
+  super_admin
+}
+
 enum SubscriptionStatus {
   inactive
   active
   past_due
   canceled
+}
+
+model PlanModelRouting {
+  id            String   @id @default(cuid())
+  plan          Plan     @unique
+  chaptersModel String   @db.VarChar(255)
+  writerModel   String   @db.VarChar(255)
+  feedbackModel String   @db.VarChar(255)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Article {
